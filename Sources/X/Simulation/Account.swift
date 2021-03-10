@@ -6,7 +6,7 @@ import Cosmos
 // (e.g. number of coins)
 public struct Account: Codable {
     let privateKey: PrivateKey
-    let publicKey: PublicKey
+    let publicKey: PublicKeyProtocol
     let address: AccountAddress
     
     public init(from decoder: Decoder) throws {

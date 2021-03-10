@@ -1,7 +1,7 @@
 import XCTest
 
-import swift_coinTests
+import swift_cosmosTests
 
 var tests = [XCTestCaseEntry]()
-tests += swift_coinTests.allTests()
+tests += swift_cosmosTests.allTests()
 XCTMain(tests)

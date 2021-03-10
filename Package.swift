@@ -2,17 +2,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "name-service",
+    name: "swift-cosmos",
     platforms: [
         .macOS(.v10_15),
     ],
     products: [
         .library(name: "Database", targets: ["Database"]),
         .library(name: "Cosmos", targets: ["Cosmos"]),
-        .library(name: "App", targets: ["App"]),
-        // App Module
-        .library(name: "NameService", targets: ["NameService"]),
-        
+
         // X Modules
         .library(name: "Auth", targets: ["Auth"]),
         .library(name: "Bank", targets: ["Bank"]),
@@ -25,10 +22,6 @@ let package = Package(
         
         .library(name: "AuthAnte", targets: ["AuthAnte"]),
         .library(name: "JSON", targets: ["JSON"]),
-
-        // Executables
-        .executable(name: "nameservicecli", targets: ["nameservicecli"]),
-        .executable(name: "nameserviced", targets: ["nameserviced"]),
     ],
     dependencies: [
         .package(name: "ABCI", url: "https://github.com/CosmosSwift/swift-abci", .upToNextMajor(from: "0.50.0")),
@@ -45,54 +38,6 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "nameservicecli",
-            dependencies: [
-                .target(name: "App"),
-                .target(name: "Auth"),
-                .target(name: "NameService"),
-                .product(name: "ArgumentParser", package: "swift-argument-parser"),
-                .product(name: "NIO", package: "swift-nio"),
-                .product(name: "NIOFoundationCompat", package: "swift-nio"),
-                .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
-                .product(name: "NIOTLS", package: "swift-nio"),
-                .product(name: "NIOHTTP1", package: "swift-nio"),
-                .product(name: "Tendermint", package: "Tendermint"),
-            ]
-        ),
-        .target(
-            name: "nameserviced",
-            dependencies: [
-                .target(name: "App"),
-                .target(name: "Auth"),
-                .target(name: "NameService"),
-                .product(name: "NIO", package: "swift-nio"),
-                .product(name: "NIOFoundationCompat", package: "swift-nio"),
-                .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
-                .product(name: "NIOTLS", package: "swift-nio"),
-                .product(name: "NIOHTTP1", package: "swift-nio"),            ]
-        ),
-        .target(
-            name: "App",
-            dependencies: [
-                .target(name: "Cosmos"),
-                .target(name: "NameService"),
-                .target(name: "GenUtil"),
-                .target(name: "Auth"),
-                .target(name: "Params"),
-                .target(name: "Bank"),
-                .target(name: "Supply"),
-                .target(name: "Staking"),
-                .target(name: "AuthAnte"),
-            ]
-        ),
-        .target(
-            name: "NameService",
-            dependencies: [
-                .target(name: "Cosmos"),
-                .target(name: "Bank"),
-            ]
-        ),
-        .target(
             name: "Cosmos",
             dependencies: [
                 .target(name: "Database"),
@@ -101,7 +46,6 @@ let package = Package(
                 .target(name: "JSON"),
                 .product(name: "iAVLPlus", package: "iAVLPlus"),
                 .product(name: "InMemoryNodeDB", package: "iAVLPlus"),
-//                .product(name: "SQLiteNodeDB", package: "iAVLPlus"),
                 .product(name: "ABCIMessages", package: "ABCI"),
                 .product(name: "ABCIServer", package: "ABCI"),
                 .product(name: "ABCINIO", package: "ABCI"),
@@ -212,6 +156,7 @@ let package = Package(
             dependencies: [
                 .target(name: "CBcrypt"),
             ]
-        )
+        ),
+        .testTarget(name: "CosmosTests"),
     ]
 )
