@@ -51,8 +51,8 @@
         "repositoryURL": "https://github.com/CosmosSwift/swift-abci",
         "state": {
           "branch": null,
-          "revision": "198b3736a40846d622f7de14bf888a476163566f",
-          "version": "0.50.1"
+          "revision": "173cf111f1d911d801ade175b764a22ed6922815",
+          "version": "0.50.2"
         }
       },
       {
@@ -176,9 +176,9 @@
         "package": "Tendermint",
         "repositoryURL": "https://github.com/CosmosSwift/swift-tendermint",
         "state": {
-          "branch": null,
+          "branch": "main",
           "revision": "ee64eea0d4e5e5d3896ed3f7ea71a142b6c91aea",
-          "version": "0.0.2"
+          "version": null
         }
       }
     ]
