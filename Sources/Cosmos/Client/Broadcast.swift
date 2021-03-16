@@ -6,7 +6,86 @@
 //
 
 import Foundation
+import NIO
+import Tendermint
 
+// BroadcastTx broadcasts a transactions either synchronously or asynchronously
+// based on the context parameters. The result of the broadcast is parsed into
+// an intermediate structure which is logged if the context has a logger
+// defined.
+
+extension RESTClient {
+    public func broadcastTransaction(params: RESTBroadcastTransactionParameters, mode: Flags.TransactionFlags.BroadcastMode = .block) throws -> EventLoopFuture<RESTResponse<TransactionResponse>> {
+        switch mode {
+        case .sync:
+            // BroadcastTxSync broadcasts transaction bytes to a Tendermint node
+            // synchronously (i.e. returns after CheckTx execution).
+            return try self.broadcastTransactionSync(params: params).map { response in
+                // RESTResponse<BroadcastTransactionResponse> -> RESTResponse<TransactionResponse>
+                if let checked = checkTendermintError(response.result, params.transaction) {
+                    return response.map { _ in checked }
+                }
+                return response.map { TransactionResponse($0) }
+                }
+        case .async:
+            // BroadcastTxAsync broadcasts transaction bytes to a Tendermint node
+            // asynchronously (i.e. returns immediately).
+            return try self.broadcastTransactionSync(params: params).map { response in
+                // RESTResponse<BroadcastTransactionResponse> -> RESTResponse<TransactionResponse>
+                if let checked = checkTendermintError(response.result, params.transaction) {
+                    return response.map { _ in checked }
+                }
+                return response.map { TransactionResponse($0) }
+                }
+        case .block:
+            // BroadcastTxCommit broadcasts transaction bytes to a Tendermint node and
+            // waits for a commit. An error is only returned if there is no RPC node
+            // connection or if broadcasting fails.
+            //
+            // NOTE: This should ideally not be used as the request may timeout but the tx
+            // may still be included in a block. Use BroadcastTxAsync or BroadcastTxSync
+            // instead.
+            return try self.broadcastTransactionSync(params: params).map { response in
+                // RESTResponse<BroadcastTransactionCommitResponse> -> RESTResponse<TransactionResponse>
+                
+                
+                if let checked = checkTendermintError(response.result, params.transaction) {
+                    return response.map { _ in checked }
+                }
+                return response.map { TransactionResponse($0) }
+                }
+        }
+    }
+}
+
+// CheckTendermintError checks if the error returned from BroadcastTx is a
+// Tendermint error that is returned before the tx is submitted due to
+// precondition checks that failed. If an Tendermint error is detected, this
+// function returns the correct code back in TxResponse.
+//
+// TODO: Avoid brittle string matching in favor of error matching. This requires
+// a change to Tendermint's RPCError type to allow retrieval or matching against
+// a concrete error type.
+func checkTendermintError<Payload: Codable>(_ result: Swift.Result<Payload, ErrorWrapper>, _ transaction: TransactionBytes) ->
+TransactionResponse? {
+    
+    switch result {
+    case .success:
+        return nil
+    case let .failure(error):
+        let errorString: String = "\(error)"
+        let hash = Tendermint.Hash.sum(data: transaction)
+
+        if errorString.contains("tx already exists in cache") { // mempool.ErrTxInCache.Error()
+            return TransactionResponse(CosmosError.errTxInMempoolCache.code, hash)
+        } else if errorString.contains("mempool is full") {
+            return TransactionResponse(CosmosError.errMempoolIsFull.code, hash)
+        } else if errorString.contains("tx too large") {
+            return TransactionResponse(CosmosError.errTxTooLarge.code, hash)
+        }
+        return nil
+    }
+}
 
 /*
  package context
