@@ -176,8 +176,8 @@
         "package": "Tendermint",
         "repositoryURL": "https://github.com/CosmosSwift/swift-tendermint",
         "state": {
-          "branch": "refactor_alex",
-          "revision": "0535052636fb4472b2b81667308e68dab201b8f1",
+          "branch": "main",
+          "revision": "ee64eea0d4e5e5d3896ed3f7ea71a142b6c91aea",
           "version": null
         }
       }
