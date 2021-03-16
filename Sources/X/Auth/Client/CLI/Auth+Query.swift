@@ -221,68 +221,29 @@ public struct QueryTransaction: ParsableCommand {
     #warning("still needs renaming")
     @Argument var txHash: String
     
-    
-//    struct Payload: RequestPayload {
-//        static var method: ABCIREST.Method { .abci_query }
-//        var path: String { "custom/acc/account" }
-//        
-//        typealias ResponsePayload = TxResponse // This is an Account
-//
-//        let hash: String
-//        
-//    }
-    
-    
-    
     public init() { }
     
     public mutating func run() throws {
-        
-        
-        
-        
+        let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
+        let client = RESTClient(url: "http://192.168.64.1:26657", httpClient: httpClient)
+    
+        let thing = client.transaction(params: RESTTransactionParameters(hash: txHash.data, prove: true))
+            .flatMap { wrappedTxResponse -> EventLoopFuture<TransactionResponse> in
+                switch wrappedTxResponse.result {
+                case let .success(txResponse):
+                    return httpClient.eventLoopGroup.next().makeSucceededFuture(txResponse)
+                case let .failure(error):
+                    return httpClient.eventLoopGroup.next().makeFailedFuture(error)
+                }
+            }.flatMap { txResponse -> EventLoopFuture<Void> in
+                return getBlocksForTransactionResults(transactionResponses: [txResponse], restClient: client).map { blockResponses in
+                    let blockResponse = blockResponses[txResponse.height]
+                    // mkTxResult
+                    // unfinished
+                    return ()
+                }
+        }
+
         fatalError()
-        //    func QueryTxCmd() *cobra.Command {
-        //        cmd := &cobra.Command{
-        //            Use:   "tx [hash]",
-        //            Args:  cobra.ExactArgs(1),
-        //            RunE: func(cmd *cobra.Command, args []string) error {
-        //                clientCtx, err := client.GetClientQueryContext(cmd)
-        //                if err != nil {
-        //                    return err
-        //                }
-        //                output, err := authclient.QueryTx(clientCtx, args[0])
-        //                if err != nil {
-        //                    return err
-        //                }
-        //
-        //                if output.Empty() {
-        //                    return fmt.Errorf("no transaction found with hash %s", args[0])
-        //                }
-        //
-        //                return clientCtx.PrintProto(output)
-        //            },
-        //        }
-        ////
-        //        return cmd
-        //    }
-        //    */
-        
-        
-        
-//        TxResponse{
-//                TxHash:    res.Hash.String(),
-//                Height:    res.Height,
-//                Codespace: res.TxResult.Codespace,
-//                Code:      res.TxResult.Code,
-//                Data:      strings.ToUpper(hex.EncodeToString(res.TxResult.Data)),
-//                RawLog:    res.TxResult.Log,
-//                Logs:      parsedLogs,
-//                Info:      res.TxResult.Info,
-//                GasWanted: res.TxResult.GasWanted,
-//                GasUsed:   res.TxResult.GasUsed,
-//                Tx:        anyTx,
-//                Timestamp: timestamp,
-//            }
     }
 }
