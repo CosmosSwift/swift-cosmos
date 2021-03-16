@@ -9,7 +9,81 @@ extension CosmosError {
     // under an internal error code and a generic message instead of
     // detailed error string.
     static let internalABCICodespace = undefinedCodespace
+    
     static let internalABCICode: UInt32 = 1
+    
+
+     // errInternal should never be exposed, but we reserve this code for non-specified errors
+     //nolint
+    static let errInternal = register(codespace: undefinedCodespace, code: 1, description: "internal")
+
+     // ErrTxDecode is returned if we cannot parse a transaction
+    static let errTxDecode = register(codespace: rootCodespace, code: 2, description: "tx parse error")
+
+     // ErrInvalidSequence is used the sequence number (nonce) is incorrect
+     // for the signature
+    static let errInvalidSequence = register(codespace: rootCodespace, code: 3, description: "invalid sequence")
+
+     // ErrUnauthorized is used whenever a request without sufficient
+     // authorization is handled.
+    static let errUnauthorized = register(codespace: rootCodespace, code: 4, description: "unauthorized")
+
+     // ErrInsufficientFunds is used when the account cannot pay requested amount.
+    static let errInsufficientFunds = register(codespace: rootCodespace, code: 5, description: "insufficient funds")
+
+     // ErrUnknownRequest to doc
+    static let errUnknownRequest = register(codespace: rootCodespace, code: 6, description: "unknown request")
+
+     // ErrInvalidAddress to doc
+    static let errInvalidAddress = register(codespace: rootCodespace, code: 7, description: "invalid address")
+
+     // ErrInvalidPubKey to doc
+    static let errInvalidPubKey = register(codespace: rootCodespace, code: 8, description: "invalid pubkey")
+
+     // ErrUnknownAddress to doc
+    static let errUnknownAddress = register(codespace: rootCodespace, code: 9, description: "unknown address")
+
+     // ErrInvalidCoins to doc
+    static let errInvalidCoins = register(codespace: rootCodespace, code: 10, description: "invalid coins")
+
+     // ErrOutOfGas to doc
+    static let errOutOfGas = register(codespace: rootCodespace, code: 11, description: "out of gas")
+
+     // ErrMemoTooLarge to doc
+    static let errMemoTooLarge = register(codespace: rootCodespace, code: 12, description: "memo too large")
+
+     // ErrInsufficientFee to doc
+    static let errInsufficientFee = register(codespace: rootCodespace, code: 13, description: "insufficient fee")
+
+     // ErrTooManySignatures to doc
+    static let errTooManySignatures = register(codespace: rootCodespace, code: 14, description: "maximum number of signatures exceeded")
+
+     // ErrNoSignatures to doc
+    static let errNoSignatures = register(codespace: rootCodespace, code: 15, description: "no signatures supplied")
+
+     // ErrJSONMarshal defines an ABCI typed JSON marshalling error
+    static let errJSONMarshal = register(codespace: rootCodespace, code: 16, description: "failed to marshal JSON bytes")
+
+     // ErrJSONUnmarshal defines an ABCI typed JSON unmarshalling error
+    static let errJSONUnmarshal = register(codespace: rootCodespace, code: 17, description: "failed to unmarshal JSON bytes")
+
+     // ErrInvalidRequest defines an ABCI typed error where the request contains
+     // invalid data.
+    static let errInvalidRequest = register(codespace: rootCodespace, code: 18, description: "invalid request")
+
+     // ErrTxInMempoolCache defines an ABCI typed error where a tx already exists
+     // in the mempool.
+    static let errTxInMempoolCache = register(codespace: rootCodespace, code: 19, description: "tx already in mempool")
+
+     // ErrMempoolIsFull defines an ABCI typed error where the mempool is full.
+    static let errMempoolIsFull = register(codespace: rootCodespace, code: 20, description: "mempool is full")
+
+     // ErrTxTooLarge defines an ABCI typed error where tx is too large.
+    static let errTxTooLarge = register(codespace: rootCodespace, code: 21, description: "tx too large")
+
+     // ErrPanic is only set when we recover from a panic, so we know to
+     // redact potentially sensitive system info
+    static let errPanic = register(codespace: undefinedCodespace, code: 111222, description: "panic")
 }
 
 // ABCIInfo returns the ABCI error information as consumed by the tendermint

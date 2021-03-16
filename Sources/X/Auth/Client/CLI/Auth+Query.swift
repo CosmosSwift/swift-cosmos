@@ -94,7 +94,7 @@ public struct GetAccount: ParsableCommand {
     public mutating func run() throws {
         // TODO: map url to the proper value
         let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
-        let client = RESTClient(url: "http://192.168.64.1:26657", httpClient: httpClient)
+        let client = RESTClient(url: queryFlags.node.description, httpClient: httpClient)
         let height: Int64 = 4
         let prove = false
         
