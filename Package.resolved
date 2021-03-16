@@ -176,9 +176,9 @@
         "package": "Tendermint",
         "repositoryURL": "https://github.com/CosmosSwift/swift-tendermint",
         "state": {
-          "branch": "main",
-          "revision": "ee64eea0d4e5e5d3896ed3f7ea71a142b6c91aea",
-          "version": null
+          "branch": null,
+          "revision": "9b438bda815888dda5b88fbabdd264d11053831b",
+          "version": "0.0.3"
         }
       }
     ]
