@@ -14,6 +14,14 @@ public struct StandardTransaction: Transaction {
     public let signatures: [StandardSignature]
     public let memo: String
     
+    
+    private enum CodingKeys: String, CodingKey {
+        case messages
+        case fee
+        case signatures
+        case memo
+    }
+    
     public init(messages: [Message], fee: StandardFee, signatures: [StandardSignature], memo: String) {
         self.messages = messages
         self.fee = fee
@@ -21,20 +29,32 @@ public struct StandardTransaction: Transaction {
         self.memo = memo
     }
     
-    
     public var encoded: Data? {
         return try? JSONEncoder().encode(self)
     }
 
     // TODO: Find a way to implement Codable for protocols, maybe make StandardTransaction generic?
     public init(from decoder: Decoder) throws {
-        fatalError()
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.fee = try container.decode(StandardFee.self, forKey: .fee)
+        
+        let messagesCodable = try container.decode([AnyProtocolCodable].self, forKey: .messages)
+        
+        let messages = messagesCodable.compactMap { $0.value as? Message }
+        
+        self.messages = messages
+        self.signatures = try container.decode([StandardSignature].self, forKey: .signatures)
+        self.memo = try container.decode(String.self, forKey: .memo)
     }
     
     public func encode(to encoder: Encoder) throws {
-        fatalError()
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(fee, forKey: .fee)
+        let mgs = messages.map { AnyProtocolCodable($0)}
+        try container.encode(mgs, forKey: .messages)
+        try container.encode(signatures, forKey: .signatures)
+        try container.encode(memo, forKey: .memo)
     }
-
     // ValidateBasic does a simple and lightweight validation check that doesn't
     // require access to any other information.
     public func validateBasic() throws {
@@ -118,6 +138,17 @@ extension Auth {
                 return transaction
             } catch {
                 throw Cosmos.Error.transactionDecode(reason: "\(error)")
+            }
+        }
+    }
+    
+    public static func defaultTransactionEncoder(codec: Codec) -> TransactionEncoder {
+        return { transaction in
+            #warning("Do we need to handle more than StandardTransaction?")
+            do {
+                return try codec.marshalBinaryLengthPrefixed(value: transaction as! StandardTransaction)
+            } catch {
+                throw Cosmos.Error.transactionEncode(reason: "\(error)")
             }
         }
     }

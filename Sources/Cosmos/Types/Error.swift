@@ -10,6 +10,7 @@ public enum Error: Swift.Error {
     case keyNotFound(key: String)
     case invalidGenesis(reason: String)
     case transactionDecode(reason: String)
+    case transactionEncode(reason: String)
     case invalidRequest(reason: String)
     case noSignatures
     case generic(reason: String)

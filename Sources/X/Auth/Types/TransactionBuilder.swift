@@ -9,7 +9,7 @@ public enum FeeStructure {
 }
 
 public struct TransactionBuilder<Tx: Transaction> {
-    //var transactionEncoder: (_ transaction: Tx) throws -> Data
+    var transactionEncoder: (_ transaction: Tx) throws -> Data
     var keybase: Keybase?
     var accountNumber: UInt64
     var sequence: UInt64
@@ -21,7 +21,7 @@ public struct TransactionBuilder<Tx: Transaction> {
     var feeStructure: FeeStructure
     
     public init(
-        //transactionEncoder: @escaping (_ transaction: Tx) throws -> Data,
+        transactionEncoder: @escaping (_ transaction: Tx) throws -> Data,
         accountNumber: UInt64,
         sequence: UInt64,
         gas: Flags.TransactionFlags.GasLimitPerTransaction,
@@ -35,7 +35,7 @@ public struct TransactionBuilder<Tx: Transaction> {
             throw TransactionBuilderError.chainIDRequired
         }
         
-        //self.transactionEncoder = transactionEncoder
+        self.transactionEncoder = transactionEncoder
         self.keybase = nil
         self.accountNumber = accountNumber
         self.sequence = sequence
