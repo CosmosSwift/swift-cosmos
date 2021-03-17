@@ -9,16 +9,16 @@ public enum FeeStructure {
 }
 
 public struct TransactionBuilder<Tx: Transaction> {
-    var transactionEncoder: TransactionEncoder
-    var keybase: Keybase?
-    var accountNumber: UInt64
-    var sequence: UInt64
-    var gas: Flags.TransactionFlags.GasLimitPerTransaction
+    public let transactionEncoder: TransactionEncoder
+    public var keybase: Keybase?
+    public let accountNumber: UInt64
+    public let sequence: UInt64
+    public let gas: Flags.TransactionFlags.GasLimitPerTransaction
     let gasAdjustment: Double
     let simulateAndExecute: Bool
-    var chainID: String
-    var memo: String
-    var feeStructure: FeeStructure
+    public let chainID: String
+    public let memo: String
+    public let feeStructure: FeeStructure
     
     public init(
         transactionEncoder: @escaping TransactionEncoder,
@@ -114,7 +114,7 @@ public struct TransactionBuilder<Tx: Transaction> {
     
     // BuildAndSign builds a single message to be signed, and signs a transaction
     // with the built message given a name, passphrase, and a set of messages.
-    func buildAndSign(name: String, passPhrase: String, messages: [Message]) throws -> Data {
+    public func buildAndSign(name: String, passPhrase: String, messages: [Message]) throws -> Data {
         let message = try buildSignMessage(messages: messages)
         return try sign(name: name, passPhrase: passPhrase, message: message)
     }
