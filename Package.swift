@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "swift-cosmos",
     platforms: [
-        .macOS(.v10_15),
+        .macos(.v10_15),
     ],
     products: [
         .library(name: "Database", targets: ["Database"]),
