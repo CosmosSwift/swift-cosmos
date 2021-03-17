@@ -94,13 +94,13 @@ public struct GetAccount: ParsableCommand {
     public mutating func run() throws {
         // TODO: map url to the proper value
         let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
-        let client = RESTClient(url: "http://192.168.64.1:26657", httpClient: httpClient)
+        let client = RESTClient(url: queryFlags.node.description, httpClient: httpClient)
         let height: Int64 = 4
         let prove = false
         
         let params = RESTABCIQueryParameters(path: "custom/acc/account", data: GetAccountPayload(Address: self.address), height: height, prove: prove)
         
-        let response: RESTResponse<ABCIQueryResponse<AnyProtocolCodable>> = try client.abciQueryMapToData(id: 10, parameters: params).wait()
+        let response: RESTResponse<ABCIQueryResponse<AnyProtocolCodable>> = try client.abciQueryMapToData(parameters: params).wait()
                 
         let data = try JSONEncoder().encode(response)
         
@@ -218,71 +218,27 @@ public struct QueryTransaction: ParsableCommand {
     
     @OptionGroup var queryFlags: Flags.QueryFlags
     
-    #warning("still needs renaming")
     @Argument var txHash: String
-    
-    
-//    struct Payload: RequestPayload {
-//        static var method: ABCIREST.Method { .abci_query }
-//        var path: String { "custom/acc/account" }
-//        
-//        typealias ResponsePayload = TxResponse // This is an Account
-//
-//        let hash: String
-//        
-//    }
-    
-    
     
     public init() { }
     
     public mutating func run() throws {
-        
-        
-        
-        
-        fatalError()
-        //    func QueryTxCmd() *cobra.Command {
-        //        cmd := &cobra.Command{
-        //            Use:   "tx [hash]",
-        //            Args:  cobra.ExactArgs(1),
-        //            RunE: func(cmd *cobra.Command, args []string) error {
-        //                clientCtx, err := client.GetClientQueryContext(cmd)
-        //                if err != nil {
-        //                    return err
-        //                }
-        //                output, err := authclient.QueryTx(clientCtx, args[0])
-        //                if err != nil {
-        //                    return err
-        //                }
-        //
-        //                if output.Empty() {
-        //                    return fmt.Errorf("no transaction found with hash %s", args[0])
-        //                }
-        //
-        //                return clientCtx.PrintProto(output)
-        //            },
-        //        }
-        ////
-        //        return cmd
-        //    }
-        //    */
-        
-        
-        
-//        TxResponse{
-//                TxHash:    res.Hash.String(),
-//                Height:    res.Height,
-//                Codespace: res.TxResult.Codespace,
-//                Code:      res.TxResult.Code,
-//                Data:      strings.ToUpper(hex.EncodeToString(res.TxResult.Data)),
-//                RawLog:    res.TxResult.Log,
-//                Logs:      parsedLogs,
-//                Info:      res.TxResult.Info,
-//                GasWanted: res.TxResult.GasWanted,
-//                GasUsed:   res.TxResult.GasUsed,
-//                Tx:        anyTx,
-//                Timestamp: timestamp,
-//            }
+        let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
+        let client = RESTClient(url: "http://192.168.64.1:26657", httpClient: httpClient)
+    
+        let output = try client.transaction(params: RESTTransactionParameters(hash: txHash.data, prove: true))
+            .flatMap { wrappedTxResponse -> EventLoopFuture<Tendermint.TransactionResponse> in
+                switch wrappedTxResponse.result {
+                case let .success(txResponse):
+                    return httpClient.eventLoopGroup.next().makeSucceededFuture(txResponse)
+                case let .failure(error):
+                    return httpClient.eventLoopGroup.next().makeFailedFuture(error)
+                }
+            }.flatMap { txResponse -> EventLoopFuture<Cosmos.TransactionResponse> in
+                return getBlockForTransactionResult(transactionResponse: txResponse, restClient: client).map { blockResponse in
+                    return Cosmos.TransactionResponse(txResponse, txResponse.transaction, blockResponse.block.header.time)
+                }
+            }.wait()
+        print(output)
     }
 }

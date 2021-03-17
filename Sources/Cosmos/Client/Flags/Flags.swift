@@ -33,7 +33,7 @@ extension DecimalCoin: ExpressibleByArgument {
 
 public enum Flags {
     #warning("NodeURL should probably be moved?")
-    public struct NodeURL: ExpressibleByArgument {
+    public struct NodeURL: ExpressibleByArgument, CustomStringConvertible {
         public enum URLScheme: String {
             case tcp
             case http
@@ -67,6 +67,10 @@ public enum Flags {
             default:
                 return nil
             }
+        }
+        
+        public var description: String {
+            "\(self.scheme)://\(self.host):\(self.port)"
         }
     }
     
