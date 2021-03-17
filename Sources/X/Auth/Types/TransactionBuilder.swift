@@ -9,7 +9,7 @@ public enum FeeStructure {
 }
 
 public struct TransactionBuilder<Tx: Transaction> {
-    var transactionEncoder: (_ transaction: Tx) throws -> Data
+    var transactionEncoder: TransactionEncoder
     var keybase: Keybase?
     var accountNumber: UInt64
     var sequence: UInt64
@@ -21,7 +21,7 @@ public struct TransactionBuilder<Tx: Transaction> {
     var feeStructure: FeeStructure
     
     public init(
-        transactionEncoder: @escaping (_ transaction: Tx) throws -> Data,
+        transactionEncoder: @escaping TransactionEncoder,
         accountNumber: UInt64,
         sequence: UInt64,
         gas: Flags.TransactionFlags.GasLimitPerTransaction,
