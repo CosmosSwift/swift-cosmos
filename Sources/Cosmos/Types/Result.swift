@@ -114,11 +114,20 @@ public struct TransactionResponse : Codable  {
         self.state = .broadcast
     }
     
-    init(_ result: Tendermint.TransactionResponse, _ transaction: TransactionBytes, _ timestamp: Date) {
+    public init(_ result: Tendermint.TransactionResponse, _ transaction: TransactionBytes, _ timestamp: Date) {
         self.txHash = result.hash
         self.code = result.transactionResult.code
         self.log = result.transactionResult.log
-        self.state = .completed(result.height, result.transactionResult.codespace, result.transactionResult.info, result.transactionResult.gasWanted, result.transactionResult.gasUsed, transaction, timestamp)
+        self.state = .completed(
+            result.height,
+            result.transactionResult.codespace,
+            result.transactionResult.data,
+            result.transactionResult.info,
+            result.transactionResult.gasWanted,
+            result.transactionResult.gasUsed,
+            transaction,
+            timestamp
+        )
     }
     
     init(_ result: Tendermint.BroadcastTransactionResponse) {
@@ -135,14 +144,43 @@ public struct TransactionResponse : Codable  {
             // TODO: checking that the checkTx is ok is a crappy way to check that the TX has completed the check process
             self.code = result.checkTransaction.code
             self.log = result.checkTransaction.log
-            self.state = .processed(result.height, result.checkTransaction.codespace, result.checkTransaction.info, result.checkTransaction.gasWanted, result.checkTransaction.gasUsed)
+            self.state = .processed(
+                result.height,
+                result.checkTransaction.codespace,
+                result.checkTransaction.data,
+                result.checkTransaction.info,
+                result.checkTransaction.gasWanted,
+                result.checkTransaction.gasUsed
+            )
         } else {
             self.code = result.deliverTransaction.code
             self.log = result.deliverTransaction.log
-            self.state = .processed(result.height, result.deliverTransaction.codespace, result.deliverTransaction.info, result.deliverTransaction.gasWanted, result.deliverTransaction.gasUsed)
+            self.state = .processed(
+                result.height,
+                result.deliverTransaction.codespace,
+                result.deliverTransaction.data,
+                result.deliverTransaction.info,
+                result.deliverTransaction.gasWanted,
+                result.deliverTransaction.gasUsed
+            )
         }
     }
     
+    init(transactionResponse: Tendermint.TransactionResponse, transaction: TransactionBytes, timestamp: Date) {
+        self.txHash = transactionResponse.hash
+        self.code = transactionResponse.transactionResult.code
+        self.log = transactionResponse.transactionResult.log
+        self.state = .completed(
+            transactionResponse.height,
+            transactionResponse.transactionResult.codespace,
+            transactionResponse.transactionResult.data,
+            transactionResponse.transactionResult.info,
+            transactionResponse.transactionResult.gasWanted,
+            transactionResponse.transactionResult.gasUsed,
+            transaction,
+            timestamp
+        )
+    }
 
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -153,6 +191,7 @@ public struct TransactionResponse : Codable  {
         
         let height = try values.decodeIfPresent(Int64.self, forKey: .height)
         let codespace = try values.decodeIfPresent(String.self, forKey: .codespace)
+        let data = try values.decodeIfPresent(Data.self, forKey: .data)
         let info = try values.decodeIfPresent(String.self, forKey: .info)
         let gasWanted = try values.decodeIfPresent(Int64.self, forKey: .gasWanted)
         let gasUsed = try values.decodeIfPresent(Int64.self, forKey: .gasUsed)
@@ -160,11 +199,11 @@ public struct TransactionResponse : Codable  {
         let transaction = try values.decodeIfPresent(TransactionBytes.self, forKey: .tx)
         let timestamp = try values.decodeIfPresent(Date.self, forKey: .timestamp)
 
-        if let h = height, let cs = codespace, let i = info, let gw = gasWanted, let gu = gasUsed {
+        if let h = height, let cs = codespace, let d = data, let i = info, let gw = gasWanted, let gu = gasUsed {
             if let tx = transaction, let t = timestamp {
-                self.state = .completed(h, cs, i, gw, gu, tx, t)
+                self.state = .completed(h, cs, d, i, gw, gu, tx, t)
             } else {
-                self.state = .processed(h, cs, i, gw, gu)
+                self.state = .processed(h, cs, d, i, gw, gu)
             }
         } else {
             self.state = .broadcast //try values.decode(Data.self, forKey: .rawLog)
@@ -179,15 +218,17 @@ public struct TransactionResponse : Codable  {
         switch state {
         case .broadcast:
             break
-        case let .processed(height, codeSpace, info, gasWanted, gasUsed):
+        case let .processed(height, codeSpace, data, info, gasWanted, gasUsed):
             try container.encode(height, forKey: .height)
             try container.encode(codeSpace, forKey: .codespace)
+            try container.encode(data, forKey: .data)
             try container.encode(info, forKey: .info)
             try container.encode(gasWanted, forKey: .gasWanted)
             try container.encode(gasUsed, forKey: .gasUsed)
-        case let .completed(height, codeSpace, info, gasWanted, gasUsed, transaction, timestamp):
+        case let .completed(height, codeSpace, data, info, gasWanted, gasUsed, transaction, timestamp):
             try container.encode(height, forKey: .height)
             try container.encode(codeSpace, forKey: .codespace)
+            try container.encode(data, forKey: .data)
             try container.encode(info, forKey: .info)
             try container.encode(gasWanted, forKey: .gasWanted)
             try container.encode(gasUsed, forKey: .gasUsed)
@@ -202,9 +243,9 @@ enum TransactionState {
     // just sent
     case broadcast
     // either checked or delivered
-    case processed(_ height: Int64, _ codeSpace: String, _ info: String, _ gasWanted: Int64, _ gasUsed: Int64)
+    case processed(_ height: Int64, _ codeSpace: String, _ data: Data, _ info: String, _ gasWanted: Int64, _ gasUsed: Int64)
     // NewResponseResultTx
-    case completed(_ height: Int64, _ codeSpace: String, _ info: String, _ gasWanted: Int64, _ gasUsed: Int64, _ transaction: TransactionBytes, _ timestamp: Date)
+    case completed(_ height: Int64, _ codeSpace: String, _ data: Data, _ info: String, _ gasWanted: Int64, _ gasUsed: Int64, _ transaction: TransactionBytes, _ timestamp: Date)
 }
 
 

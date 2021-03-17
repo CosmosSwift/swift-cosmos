@@ -218,7 +218,6 @@ public struct QueryTransaction: ParsableCommand {
     
     @OptionGroup var queryFlags: Flags.QueryFlags
     
-    #warning("still needs renaming")
     @Argument var txHash: String
     
     public init() { }
@@ -227,23 +226,19 @@ public struct QueryTransaction: ParsableCommand {
         let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
         let client = RESTClient(url: "http://192.168.64.1:26657", httpClient: httpClient)
     
-        let thing = client.transaction(params: RESTTransactionParameters(hash: txHash.data, prove: true))
-            .flatMap { wrappedTxResponse -> EventLoopFuture<TransactionResponse> in
+        let output = try client.transaction(params: RESTTransactionParameters(hash: txHash.data, prove: true))
+            .flatMap { wrappedTxResponse -> EventLoopFuture<Tendermint.TransactionResponse> in
                 switch wrappedTxResponse.result {
                 case let .success(txResponse):
                     return httpClient.eventLoopGroup.next().makeSucceededFuture(txResponse)
                 case let .failure(error):
                     return httpClient.eventLoopGroup.next().makeFailedFuture(error)
                 }
-            }.flatMap { txResponse -> EventLoopFuture<Void> in
-                return getBlocksForTransactionResults(transactionResponses: [txResponse], restClient: client).map { blockResponses in
-                    let blockResponse = blockResponses[txResponse.height]
-                    // mkTxResult
-                    // unfinished
-                    return ()
+            }.flatMap { txResponse -> EventLoopFuture<Cosmos.TransactionResponse> in
+                return getBlockForTransactionResult(transactionResponse: txResponse, restClient: client).map { blockResponse in
+                    return Cosmos.TransactionResponse(txResponse, txResponse.transaction, blockResponse.block.header.time)
                 }
-        }
-
-        fatalError()
+            }.wait()
+        print(output)
     }
 }
