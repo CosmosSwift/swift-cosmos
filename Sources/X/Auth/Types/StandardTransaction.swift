@@ -30,6 +30,9 @@ public struct StandardTransaction: Transaction {
     }
     
     public var encoded: Data? {
+        
+        //return try? codec.marshalBinaryLengthPrefixed(data: try? JSONEncoder().encode(self))
+        #warning("This should be marchalled as binary and not json")
         return try? JSONEncoder().encode(self)
     }
 

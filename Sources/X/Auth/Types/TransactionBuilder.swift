@@ -136,10 +136,10 @@ public struct TransactionBuilder<Tx: Transaction> {
                 memo: signedMessage.memo
             )
         
-        guard let encoded = transaction.encoded else {
-            throw CosmosError.init(codespace: "TransactionBuilder", code: 1, description: "Can't encode transaction")
-        }
-        return encoded
+//        guard let encoded = transaction.encoded else {
+//            throw CosmosError.init(codespace: "TransactionBuilder", code: 1, description: "Can't encode transaction")
+//        }
+        return try transactionEncoder(transaction)
         
 //        func (bldr TxBuilder) BuildTxForSim(msgs []sdk.Msg) ([]byte, error) {
 //            signMsg, err := bldr.BuildSignMsg(msgs)
