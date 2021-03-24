@@ -19,16 +19,108 @@ extension StandardFee: Codable {}
 
 // StdSignature represents a sig
 public struct StandardSignature {
-    // TODO: Find a way to implement Codable for protocols, maybe make StandardSignature generic?
-//    let publicKey: PublicKey?
+    public let publicKey: PublicKeyProtocol? // TODO: not sure when this can be nil. the Go code specifies this s optional.
     public let signature: Data
     
-    public init(signature: Data) {
+    private enum CodingKeys: String, CodingKey {
+        case publicKey = "pubkey"
+        case signature
+    }
+    
+    public init(publicKey: PublicKeyProtocol, signature: Data) {
+        self.publicKey = publicKey
         self.signature = signature
     }
 }
 
-extension StandardSignature: Codable {}
+extension StandardSignature: Codable {
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let publicKeyCodable = try container.decodeIfPresent(AnyProtocolCodable.self, forKey: .publicKey)
+        
+        guard let publicKey = publicKeyCodable?.value as? PublicKeyProtocol else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .publicKey,
+                in: container,
+                debugDescription: "Invalid public key type"
+            )
+        }
+        
+        self.publicKey = publicKey
+        self.signature = try container.decode(Data.self, forKey: .signature)
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        if let publicKey = self.publicKey {
+            try container.encode(AnyProtocolCodable(publicKey), forKey: .publicKey)
+        }
+        try container.encode(signature, forKey: .signature)
+    }
+}
+
+
+// StdSignDoc is replay-prevention structure.
+// It includes the result of msg.GetSignBytes(),
+// as well as the ChainID (prevent cross chain replay)
+// and the Sequence numbers for each signature (prevent
+// inchain replay and enforce tx ordering per account).
+public struct StandardSignatureDoc {
+    
+}
+
+
+extension StandardSignatureDoc: Codable {
+    
+}
+
+/*
+ // StdSignDoc is replay-prevention structure.
+ // It includes the result of msg.GetSignBytes(),
+ // as well as the ChainID (prevent cross chain replay)
+ // and the Sequence numbers for each signature (prevent
+ // inchain replay and enforce tx ordering per account).
+ type StdSignDoc struct {
+     AccountNumber uint64            `json:"account_number" yaml:"account_number"`
+     ChainID       string            `json:"chain_id" yaml:"chain_id"`
+     Fee           json.RawMessage   `json:"fee" yaml:"fee"`
+     Memo          string            `json:"memo" yaml:"memo"`
+     Msgs          []json.RawMessage `json:"msgs" yaml:"msgs"`
+     Sequence      uint64            `json:"sequence" yaml:"sequence"`
+ }
+
+ // StdSignBytes returns the bytes to sign for a transaction.
+ func StdSignBytes(chainID string, accnum uint64, sequence uint64, fee StdFee, msgs []sdk.Msg, memo string) []byte {
+     msgsBytes := make([]json.RawMessage, 0, len(msgs))
+     for _, msg := range msgs {
+         msgsBytes = append(msgsBytes, json.RawMessage(msg.GetSignBytes()))
+     }
+     bz, err := ModuleCdc.MarshalJSON(StdSignDoc{
+         AccountNumber: accnum,
+         ChainID:       chainID,
+         Fee:           json.RawMessage(fee.Bytes()),
+         Memo:          memo,
+         Msgs:          msgsBytes,
+         Sequence:      sequence,
+     })
+     if err != nil {
+         panic(err)
+     }
+     return sdk.MustSortJSON(bz)
+ }
+ */
+
+
+
+
+
+
+
+
+
+
+
 
 // Transactions messages must fulfill the `Message`
 public protocol Message: ProtocolCodable {
@@ -45,7 +137,7 @@ public protocol Message: ProtocolCodable {
     func validateBasic() throws
 
     // Get the canonical byte representation of the Msg.
-    var signedData: Data { get }
+    var toSign: Data { get }
 
     // Returns the addresses of signers that must sign.
     // CONTRACT: All signatures must be present to be valid.

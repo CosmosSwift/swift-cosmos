@@ -9,6 +9,10 @@ extension BankKeys {
 
 // MsgSend - high level transaction of the coin module
 struct SendMessage: Message {
+    var toSign: Data {
+        fatalError()
+    }
+    
     static let metaType: MetaType = Self.metaType(
         key: "cosmos-sdk/MsgSend"
     )
@@ -72,13 +76,18 @@ extension SendMessage {
 
 // MsgMultiSend - high level transaction of the coin module
 struct MultiSendMessage: Message {
+    
     static let metaType: MetaType = Self.metaType(
         key: "cosmos-sdk/MsgMultiSend"
     )
     
     let inputs:  [Input]
     let outputs: [Output]
-    
+ 
+    var toSign: Data {
+        fatalError()
+    }
+
     // NewMsgMultiSend - construct arbitrary multi-in, multi-out send msg.
     internal init(inputs: [Input], outputs: [Output]) {
         self.inputs = inputs

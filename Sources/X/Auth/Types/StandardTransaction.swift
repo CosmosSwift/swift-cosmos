@@ -101,6 +101,14 @@ public struct StandardTransaction: Transaction {
 
 func standardSignBytes(chainID: String, accountNumber: UInt64, sequence: UInt64, fee: StandardFee, messages: [Message], memo: String) -> Data {
     fatalError()
+    
+    var messagesBytes: [Data] = []
+    for message in messages {
+        #warning("This needs to be properly checked")
+        messagesBytes.append(message.toSign)
+    }
+    
+    
 //    // StdSignBytes returns the bytes to sign for a transaction.
 //    func StdSignBytes(chainID string, accnum uint64, sequence uint64, fee StdFee, msgs []sdk.Msg, memo string) []byte {
 //        msgsBytes := make([]json.RawMessage, 0, len(msgs))

@@ -109,7 +109,8 @@ public struct TransactionBuilder<Tx: Transaction> {
     // MakeSignature builds a StdSignature given keybase, key name, passphrase, and a StdSignMsg.
     static func makeSignature(keybase: Keybase?, name: String, passPhrase: String, message: StandardSignedMessage) throws -> StandardSignature {
         let keybase = keybase ?? newKeyring(KeyringServiceName(), keyringBackend: "", homeFlag: "")
-        return StandardSignature(signature: try keybase.sign(name: name, passphrase: passPhrase, message: message.data).0)
+        let keyInfo = try keybase.get(name: name)
+        return StandardSignature(publicKey: keyInfo.publicKey, signature: try keybase.sign(name: name, passphrase: passPhrase, message: message.data).0)
     }
     
     // BuildAndSign builds a single message to be signed, and signs a transaction
@@ -124,14 +125,14 @@ public struct TransactionBuilder<Tx: Transaction> {
     func buildTransactionForSimulation(messages: [Message]) throws -> Data {
         let signedMessage = try buildSignMessage(messages: messages)
         
-        fatalError("This is not correct yet")
-        //let signatures = [StandardSig]
+        // the ante handler will populate with a sentinel pubkey
+        let signatures: [StandardSignature] = []
         
         let transaction =
             Tx(
                 messages: signedMessage.messages,
                 fee: signedMessage.fee,
-                signatures: [], // this probably shouldn't be empty
+                signatures: signatures,
                 memo: signedMessage.memo
             )
         
