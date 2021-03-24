@@ -31,6 +31,14 @@ public protocol Account: ProtocolCodable, CustomStringConvertible {
     func spendableCoins(blockTime: TimeInterval) -> [Coin]
 }
 
+// ModuleAccountI defines an account interface for modules that hold tokens in
+// an escrow.
+public protocol ModuleAccount: Account {
+    var name: String { get }
+    var permissions: [String] { get }
+    func has(permission: String) -> Bool
+}
+
 // GenesisAccounts defines a slice of GenesisAccount objects
 public typealias GenesisAccounts = [GenesisAccount]
 

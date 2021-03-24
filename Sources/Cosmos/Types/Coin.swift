@@ -1,11 +1,12 @@
 import Foundation
+import CosmosProto
 
 // Coin hold some amount of one currency.
 //
 // CONTRACT: A coin will never hold a negative amount of any denomination.
 public struct Coin: Codable {
-    let denomination: String
-    let amount: UInt
+    public let denomination: String
+    public let amount: UInt
     
     public init(denomination: String, amount: UInt) {
         self.denomination = denomination
@@ -16,8 +17,23 @@ public struct Coin: Codable {
         case denomination = "denom"
         case amount
     }
-    
 }
+
+public extension Coin {
+    init(_ coin: Cosmos_Base_V1beta1_Coin) {
+        self.denomination = coin.denom
+        self.amount = UInt(coin.amount)!
+    }
+}
+
+public extension Cosmos_Base_V1beta1_Coin {
+    init(_ coin: Coin) {
+        self.init()
+        self.denom = coin.denomination
+        self.amount = "\(coin.amount)"
+    }
+}
+
 extension Coin {
     public init?(string: String) {
         // get the first char which is not number (or . when we handle DecCoin)
@@ -52,11 +68,32 @@ extension Coin {
         try container.encode("\(amount)", forKey: .amount)
     }
     
+    // Validate returns an error if the Coin has a negative amount or if
+    // the denom is invalid.
+    func validate() throws {
+        try Cosmos.validate(denomination: denomination)
+    }
+
+    // IsValid returns true if the Coin has a non-negative amount and the denom is valid.
+    public var isValid: Bool {
+        do {
+            try validate()
+            return true
+        } catch {
+            return false
+        }
+    }
+
     var isZero: Bool {
         amount == 0
     }
 }
 
+extension Coin: CustomStringConvertible {
+    public var description: String {
+        "\(amount)\(denomination)"
+    }
+}
 
 // Adds amounts of two coins with same denom. If the coins differ in denom then
 // it panics.
@@ -141,7 +178,7 @@ extension Array where Element == Coin {
             return true
         case 1:
             do {
-                try Self.validate(denomination: self[0].denomination)
+                try Cosmos.validate(denomination: self[0].denomination)
                 return true
             } catch {
                 return false
@@ -301,7 +338,7 @@ extension Array where Element == Coin {
      
     // Returns the amount of a denom from coins
     public func amountOf(denomination: String) -> UInt {
-        [Coin].mustValidate(denomination: denomination)
+        Cosmos.mustValidate(denomination: denomination)
 
         switch count {
         case 0:
@@ -329,18 +366,18 @@ extension Array where Element == Coin {
             }
         }
     }
-    
-    static let denominationRegex = "[a-z][a-z0-9]{2,15}"
+}
 
-    // ValidateDenom validates a denomination string returning an error if it is
-    // invalid.
-    public static func validate(denomination: String) throws {
-        if denomination.range(of: denominationRegex, options: .regularExpression) == nil {
-            throw Cosmos.Error.invalidDenomination(denomination: denomination)
-        }
-    }
+let denominationRegex = "[a-z][a-z0-9]{2,15}"
 
-    static func mustValidate(denomination: String) {
-        try! validate(denomination: denomination)
+// ValidateDenom validates a denomination string returning an error if it is
+// invalid.
+public func validate(denomination: String) throws {
+    if denomination.range(of: denominationRegex, options: .regularExpression) == nil {
+        throw Cosmos.Error.invalidDenomination(denomination: denomination)
     }
+}
+
+func mustValidate(denomination: String) {
+    try! validate(denomination: denomination)
 }
