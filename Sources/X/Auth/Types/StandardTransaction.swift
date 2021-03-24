@@ -99,14 +99,17 @@ public struct StandardTransaction: Transaction {
 
 
 
-func standardSignBytes(chainID: String, accountNumber: UInt64, sequence: UInt64, fee: StandardFee, messages: [Message], memo: String) -> Data {
-    fatalError()
+func standardSignBytes(chainID: String, accountNumber: UInt64, sequence: UInt64, fee: StandardFee, messages: [Message], memo: String) throws -> Data {
     
     var messagesBytes: [Data] = []
     for message in messages {
         #warning("This needs to be properly checked")
         messagesBytes.append(message.toSign)
     }
+    
+    let sigDoc = StandardSignatureDoc(accountNumber: accountNumber, chainID: chainID, fee: fee, memo: memo, messages: messagesBytes, sequence: sequence)
+    
+    return try JSONEncoder().encode(sigDoc)
     
     
 //    // StdSignBytes returns the bytes to sign for a transaction.

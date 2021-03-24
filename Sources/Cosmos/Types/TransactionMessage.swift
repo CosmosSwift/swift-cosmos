@@ -69,7 +69,7 @@ extension StandardSignature: Codable {
 public struct StandardSignatureDoc {
     let accountNumber: UInt64
     let chainID: String
-    let fee: Data // json.RawMessage
+    let fee: StandardFee // json.RawMessage
     let memo: String
     let messages: [Data] // json.RawMessage
     let sequence: UInt64
@@ -81,6 +81,15 @@ public struct StandardSignatureDoc {
         case memo
         case messages = "msgs"
         case sequence
+    }
+    
+    public init(accountNumber: UInt64, chainID: String, fee: StandardFee, memo: String, messages: [Data], sequence: UInt64) {
+        self.accountNumber = accountNumber
+        self.chainID = chainID
+        self.fee = fee
+        self.memo = memo
+        self.messages = messages
+        self.sequence = sequence
     }
 }
 
