@@ -67,7 +67,21 @@ extension StandardSignature: Codable {
 // and the Sequence numbers for each signature (prevent
 // inchain replay and enforce tx ordering per account).
 public struct StandardSignatureDoc {
+    let accountNumber: UInt64
+    let chainID: String
+    let fee: Data // json.RawMessage
+    let memo: String
+    let messages: [Data] // json.RawMessage
+    let sequence: UInt64
     
+    private enum CodingKeys: String, CodingKey {
+        case accountNumber = "account_number"
+        case chainID = "chain_id"
+        case fee
+        case memo
+        case messages = "msgs"
+        case sequence
+    }
 }
 
 
