@@ -9,10 +9,6 @@ extension BankKeys {
 
 // MsgSend - high level transaction of the coin module
 struct SendMessage: Message {
-    var toSign: Data {
-        fatalError()
-    }
-    
     static let metaType: MetaType = Self.metaType(
         key: "cosmos-sdk/MsgSend"
     )
@@ -64,7 +60,7 @@ extension SendMessage {
     }
 
     // GetSignBytes Implements Msg.
-    var signedData: Data {
+    var toSign: Data {
         mustSortJSON(data: Codec.bankCodec.mustMarshalJSON(value: self))
     }
 
@@ -83,10 +79,6 @@ struct MultiSendMessage: Message {
     
     let inputs:  [Input]
     let outputs: [Output]
- 
-    var toSign: Data {
-        fatalError()
-    }
 
     // NewMsgMultiSend - construct arbitrary multi-in, multi-out send msg.
     internal init(inputs: [Input], outputs: [Output]) {
@@ -125,7 +117,7 @@ extension MultiSendMessage {
     }
 
     // GetSignBytes Implements Msg.
-    var signedData: Data {
+    var toSign: Data {
         return mustSortJSON(data: Codec.bankCodec.mustMarshalJSON(value: self))
     }
 
