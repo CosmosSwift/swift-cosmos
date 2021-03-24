@@ -34,6 +34,7 @@ struct StandardSignedMessage {
     let memo: String
     
     var data: Data {
-        return standardSignBytes(chainID: chainID, accountNumber: accountNumber, sequence: sequence, fee: fee, messages: messages, memo: memo)
+        #warning("Implement properly")
+        return (try? standardSignBytes(chainID: chainID, accountNumber: accountNumber, sequence: sequence, fee: fee, messages: messages, memo: memo) ) ?? Data()
     }
 }
