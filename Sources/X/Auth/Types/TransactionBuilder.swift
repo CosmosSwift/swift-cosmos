@@ -96,7 +96,7 @@ public struct TransactionBuilder<Tx: Transaction> {
 //        guard let encoded = transaction.encoded else {
 //            throw CosmosError.init(codespace: "TransactionBuilder", code: 1, description: "Can't encode transaction")
 //        }
-        return transactionEncoder(transaction)
+        return try transactionEncoder(transaction)
     }
     
     struct KeyringServiceName {
