@@ -250,21 +250,22 @@ extension ScopedCapabilityKeeper {
 //
 //    return cap, nil
 //}
-//
-//// AuthenticateCapability attempts to authenticate a given capability and name
-//// from a caller. It allows for a caller to check that a capability does in fact
-//// correspond to a particular name. The scoped keeper will lookup the capability
-//// from the internal in-memory store and check against the provided name. It returns
-//// true upon success and false upon failure.
-////
-//// Note, the capability's forward mapping is indexed by a string which should
-//// contain its unique memory reference.
-//func (sk ScopedKeeper) AuthenticateCapability(ctx sdk.Context, cap *types.Capability, name string) bool {
-//    if strings.TrimSpace(name) == "" || cap == nil {
-//        return false
-//    }
-//    return sk.GetCapabilityName(ctx, cap) == name
-//}
+
+    // AuthenticateCapability attempts to authenticate a given capability and name
+    // from a caller. It allows for a caller to check that a capability does in fact
+    // correspond to a particular name. The scoped keeper will lookup the capability
+    // from the internal in-memory store and check against the provided name. It returns
+    // true upon success and false upon failure.
+    //
+    // Note, the capability's forward mapping is indexed by a string which should
+    // contain its unique memory reference.
+    public func authenticate(capability: Capability, name: String, request: Request) -> Bool {
+        guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return false
+        }
+        
+        return self.name(capability: capability, request: request) == name
+    }
 
     // ClaimCapability attempts to claim a given Capability. The provided name and
     // the scoped module's name tuple are treated as the owner. It will attempt
@@ -385,17 +386,18 @@ extension ScopedCapabilityKeeper {
         return capability
     }
 
-//// GetCapabilityName allows a module to retrieve the name under which it stored a given
-//// capability given the capability
-//func (sk ScopedKeeper) GetCapabilityName(ctx sdk.Context, cap *types.Capability) string {
-//    if cap == nil {
-//        return ""
-//    }
-//    memStore := ctx.KVStore(sk.memKey)
-//
-//    return string(memStore.Get(types.FwdCapabilityKey(sk.module, cap)))
-//}
-//
+    // GetCapabilityName allows a module to retrieve the name under which it stored a given
+    // capability given the capability
+    func name(capability: Capability, request: Request) -> String {
+        let inMemoryStore = request.keyValueStore(key: inMemoryStoreKey)
+        return inMemoryStore.get(
+            key: CapabilityKeys.forwardCapabilityKey(
+                module: module,
+                capability: capability
+            )
+        )?.string ?? ""
+    }
+
 //// GetOwners all the Owners that own the capability associated with the name this ScopedKeeper uses
 //// to refer to the capability
 //func (sk ScopedKeeper) GetOwners(ctx sdk.Context, name string) (*types.CapabilityOwners, bool) {
