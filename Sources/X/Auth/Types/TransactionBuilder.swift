@@ -91,10 +91,12 @@ public struct TransactionBuilder<Tx: Transaction> {
     func sign(name: String, passPhrase: String, message: StandardSignedMessage) throws -> Data {
         let signature = try TransactionBuilder.makeSignature(keybase: keybase, name: name, passPhrase: passPhrase, message: message)
         let transaction = Tx(messages: message.messages, fee: message.fee, signatures: [signature], memo: message.memo)
-        guard let encoded = transaction.encoded else {
-            throw CosmosError.init(codespace: "TransactionBuilder", code: 1, description: "Can't encode transaction")
-        }
-        return encoded
+        
+        
+//        guard let encoded = transaction.encoded else {
+//            throw CosmosError.init(codespace: "TransactionBuilder", code: 1, description: "Can't encode transaction")
+//        }
+        return transactionEncoder(transaction)
     }
     
     struct KeyringServiceName {
