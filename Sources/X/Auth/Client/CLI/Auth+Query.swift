@@ -225,15 +225,10 @@ public struct QueryTransaction: ParsableCommand {
     public mutating func run() throws {
         let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
         let client = RESTClient(url: "http://192.168.64.1:26657", httpClient: httpClient)
-    
-        let output = try client.transaction(params: RESTTransactionParameters(hash: txHash.data, prove: true))
-            .flatMap { wrappedTxResponse -> EventLoopFuture<Tendermint.TransactionResponse> in
-                switch wrappedTxResponse.result {
-                case let .success(txResponse):
-                    return httpClient.eventLoopGroup.next().makeSucceededFuture(txResponse)
-                case let .failure(error):
-                    return httpClient.eventLoopGroup.next().makeFailedFuture(error)
-                }
+        
+        let output = try client.transaction(params: .init(hash: txHash.data, prove: true))
+            .flatMapResult { wrappedTxResponse in
+                wrappedTxResponse.result
             }.flatMap { txResponse -> EventLoopFuture<Cosmos.TransactionResponse> in
                 return getBlockForTransactionResult(transactionResponse: txResponse, restClient: client).map { blockResponse in
                     return Cosmos.TransactionResponse(txResponse, txResponse.transaction, blockResponse.block.header.time)
