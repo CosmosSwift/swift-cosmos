@@ -15,28 +15,28 @@ import Tendermint
 // defined.
 
 extension RESTClient {
-    public func broadcastTransaction(params: RESTBroadcastTransactionParameters, mode: Flags.TransactionFlags.BroadcastMode = .block) throws -> EventLoopFuture<RESTResponse<TransactionResponse>> {
+    public func broadcastTransaction(params: RESTBroadcastTransactionParameters, mode: Flags.TransactionFlags.BroadcastMode = .block) -> EventLoopFuture<RESTResponse<TransactionResponse>> {
         switch mode {
         case .sync:
             // BroadcastTxSync broadcasts transaction bytes to a Tendermint node
             // synchronously (i.e. returns after CheckTx execution).
-            return try self.broadcastTransactionSync(params: params).map { response in
+            return self.broadcastTransactionSync(params: params).map { response in
                 // RESTResponse<BroadcastTransactionResponse> -> RESTResponse<TransactionResponse>
                 if let checked = checkTendermintError(response.result, params.transaction) {
                     return response.map { _ in checked }
                 }
                 return response.map { TransactionResponse($0) }
-                }
+            }
         case .async:
             // BroadcastTxAsync broadcasts transaction bytes to a Tendermint node
             // asynchronously (i.e. returns immediately).
-            return try self.broadcastTransactionSync(params: params).map { response in
+            return self.broadcastTransactionSync(params: params).map { response in
                 // RESTResponse<BroadcastTransactionResponse> -> RESTResponse<TransactionResponse>
                 if let checked = checkTendermintError(response.result, params.transaction) {
                     return response.map { _ in checked }
                 }
                 return response.map { TransactionResponse($0) }
-                }
+            }
         case .block:
             // BroadcastTxCommit broadcasts transaction bytes to a Tendermint node and
             // waits for a commit. An error is only returned if there is no RPC node
@@ -45,7 +45,7 @@ extension RESTClient {
             // NOTE: This should ideally not be used as the request may timeout but the tx
             // may still be included in a block. Use BroadcastTxAsync or BroadcastTxSync
             // instead.
-            return try self.broadcastTransactionSync(params: params).map { response in
+            return self.broadcastTransactionSync(params: params).map { response in
                 // RESTResponse<BroadcastTransactionCommitResponse> -> RESTResponse<TransactionResponse>
                 
                 
@@ -53,7 +53,7 @@ extension RESTClient {
                     return response.map { _ in checked }
                 }
                 return response.map { TransactionResponse($0) }
-                }
+            }
         }
     }
 }

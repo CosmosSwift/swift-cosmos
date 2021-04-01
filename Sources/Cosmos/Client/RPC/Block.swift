@@ -62,7 +62,7 @@ public struct BlockCommand: ParsableCommand {
     )
     
     @Option(name: .shortAndLong, help: "<host>:<port> Node to connect to")
-    public var node: NodeURL = NodeURL(argument: "tcp://localhost:26657")!
+    public var node: Flags.NodeURL = .init(argument: "tcp://localhost:26657")!
         
     @Argument var height: Int64
     

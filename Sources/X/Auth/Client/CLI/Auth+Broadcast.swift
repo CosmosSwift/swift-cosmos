@@ -1,6 +1,8 @@
 import Foundation
 import ArgumentParser
 import Cosmos
+import AsyncHTTPClient
+import Tendermint
 
 
 // GetBroadcastCommand returns the tx broadcast command.
@@ -19,7 +21,6 @@ public struct GetBroadcast: ParsableCommand {
     
     @OptionGroup var txFlags: Flags.TransactionFlags
   
-    
     @Argument var filePath: String
 
     public init() {}
@@ -35,34 +36,28 @@ public struct GetBroadcast: ParsableCommand {
 //    }
     
     public mutating func run() throws {
-        fatalError()
-        //            RunE: func(cmd *cobra.Command, args []string) error {
-//        clientCtx, err := client.GetClientTxContext(cmd)
-//        if err != nil {
-//            return err
-//        }
-//
-//        if offline, _ := cmd.Flags().GetBool(flags.FlagOffline); offline {
-//            return errors.New("cannot broadcast tx during offline mode")
-//        }
-//
-//        stdTx, err := authclient.ReadTxFromFile(clientCtx, args[0])
-//        if err != nil {
-//            return err
-//        }
-//
-//        txBytes, err := clientCtx.TxConfig.TxEncoder()(stdTx)
-//        if err != nil {
-//            return err
-//        }
-//
-//        res, err := clientCtx.BroadcastTx(txBytes)
-//        if err != nil {
-//            return err
-//        }
-//
-//        return clientCtx.PrintProto(res)
-        //            },
+        if txFlags.offline {
+            #warning("Then why do we support having this flag here?")
+            fatalError("Cannot broadcast tx during offline mode")
+        }
+        
+        let fileURL = URL(fileURLWithPath: filePath)
+        let transactionData = try Data(contentsOf: fileURL)
+
+        let jsonDecoder = JSONDecoder()
+        let standardTransaction = try jsonDecoder.decode(StandardTransaction.self, from: transactionData)
+        
+        let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
+        let client = RESTClient(url: "http://192.168.64.1:26657", httpClient: httpClient)
+        
+        let response = try client.broadcastTransaction(
+            params: .init(transaction: standardTransaction.encoded!)
+        ).flatMapResult { wrappedBroadcastTransactionResponse in
+            wrappedBroadcastTransactionResponse.result
+        }
+        
+        //return clientCtx.PrintProto(res)
+        print(response)
     }
 }
 
