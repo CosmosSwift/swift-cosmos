@@ -32,7 +32,12 @@ public class Codec {
     public func marshalBinaryLengthPrefixed<T: Encodable>(value: T) throws -> Data {
         
         let data = try marshalBinaryBare(value: value)
+        
         let size = Data(varintEncode(data.count))
+        print(value)
+        print(data.count)
+        print(size.hex)
+        print(data.hex)
         return size + data
     }
 
@@ -44,7 +49,10 @@ public class Codec {
     // MarshalBinaryBare doesn't prefix the byte-length of the encoding,
     // so the caller must handle framing.
     public func marshalBinaryBare<T: Encodable>(value: T) throws -> Data {
-        try encoder.encode(value)
+        let encoded = try encoder.encode(value)
+        print(String(data: encoded, encoding: .utf8))
+        return encoded
+
 //        // Dereference value if pointer.
 //        var rv, _, isNilPtr = derefPointers(reflect.ValueOf(o))
 //        if isNilPtr {
@@ -118,7 +126,8 @@ public class Codec {
     
     // UnmarshalBinaryBare will panic if ptr is a nil-pointer.
     public func unmarshalBinaryBare<T: Decodable>(data: Data) throws -> T {
-        try decoder.decode(T.self, from: data)
+        print(T.self)
+        return try decoder.decode(T.self, from: data)
     }
     
     // attempt to make some pretty json

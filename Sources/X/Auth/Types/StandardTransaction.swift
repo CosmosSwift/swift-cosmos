@@ -29,6 +29,8 @@ public struct StandardTransaction: Transaction {
         self.memo = memo
     }
     
+    public var gas: UInt64 { self.fee.gas }
+    
     public var encoded: Data? {
         
         //return try? codec.marshalBinaryLengthPrefixed(data: try? JSONEncoder().encode(self))
@@ -100,8 +102,6 @@ public struct StandardTransaction: Transaction {
 
 //__________________________________________________________
 
-
-
 func standardSignBytes(chainID: String, accountNumber: UInt64, sequence: UInt64, fee: StandardFee, messages: [Message], memo: String) throws -> Data {
     
     var messagesBytes: [Data] = []
@@ -148,6 +148,7 @@ extension Auth {
             // StdTx.Msg is an interface. The concrete types
             // are registered by MakeTxCodec
             do {
+                print(transactionData.hex)
                 let transaction: StandardTransaction = try codec.unmarshalBinaryLengthPrefixed(data: transactionData)
                 return transaction
             } catch {
@@ -160,7 +161,13 @@ extension Auth {
         return { transaction in
             #warning("Do we need to handle more than StandardTransaction?")
             do {
-                return try codec.marshalBinaryLengthPrefixed(value: transaction as! StandardTransaction)
+                let encoded = try codec.marshalBinaryLengthPrefixed(value: transaction as! StandardTransaction)
+                let tx: StandardTransaction = try codec.unmarshalBinaryLengthPrefixed(data: encoded)
+                print (tx)
+                print(encoded.hex)
+                print(encoded.count)
+                return encoded
+                
             } catch {
                 throw Cosmos.Error.transactionEncode(reason: "\(error)")
             }

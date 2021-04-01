@@ -1,6 +1,7 @@
 import Foundation
 import ArgumentParser
 import Tendermint
+import CryptoKit
 
 // TODO: This was inside a dependency called 99designs/keyring
 // Check where is the best place to put this
@@ -264,7 +265,8 @@ extension KeyringKeybase {
                 throw Cosmos.Error.generic(reason: "Invalid Private Key Armor for LocalInfo Key: \(keyInfo)")
             }
             
-            let sig = try privateKey.sign(message: message)
+            let hash = Data(SHA512.hash(data: message))
+            let sig = try privateKey.sign(message: hash)
             
             return (sig, privateKey.publicKey)
             

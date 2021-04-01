@@ -22,6 +22,9 @@ extension CosmosError {
     // ErrPanic is only set when we recover from a panic, so we know to
     // redact potentially sensitive system info
     static let panic = register(codespace: undefinedCodespace, code: 111222, description: "panic")
+    
+    // Invalid transaction
+    public static let invalidTransaction = register(codespace: rootCodespace, code: 1111, description: "invalid transaction type")
 
 }
 

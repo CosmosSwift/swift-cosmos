@@ -184,6 +184,7 @@ public protocol Transaction: ProtocolCodable {
     // ValidateBasic does a simple and lightweight validation check that doesn't
     // require access to any other information.
     func validateBasic() throws
+    
 }
 
 //__________________________________________________________
