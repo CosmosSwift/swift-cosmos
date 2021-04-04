@@ -68,7 +68,7 @@ public struct TransactionBuilder<Tx: Transaction> {
                 let fee = gasPrice.amount * gasDecimal
                 let roundedFee = fee.rounded(0, .up)
                 // wrap it in an NSDecimalNumber since Decimal can't be cast to uint itself.
-                let amount = UInt(NSDecimalNumber(decimal: roundedFee))
+                let amount = Int(NSDecimalNumber(decimal: roundedFee))
                 return Coin(denomination: gasPrice.denomination, amount: amount)
             }
             finalFees = coins

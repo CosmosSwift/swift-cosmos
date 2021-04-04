@@ -67,7 +67,10 @@ struct ABCIMessageLog: Codable, CustomStringConvertible {
     // String implements the fmt.Stringer interface for the ABCIMessageLogs type.
     var description: String {
         // TODO: Implement
-        fatalError()
+        guard let data = try? JSONEncoder().encode(self) else {
+            return ""
+        }
+        return String(data: data, encoding: .utf8) ?? ""
 //        if logs != nil {
 //            raw, err := codec.Cdc.MarshalJSON(logs)
 //            if err == nil {

@@ -51,67 +51,288 @@ public final class BaseKeeper: BaseSendKeeper, BankKeeper  {
     public func delegateCoins(request: Request, delegatorAddress: AccountAddress, moduleAccountAddress: AccountAddress, amount: [Coin]) throws {
         // TODO: Implement
         fatalError()
-//        guard let delegatorAccount = accountKeeper.account(request: request, address: delegatorAddress) else {
-//            throw Cosmos.Error.unknownAddress(reason: "account \(delegatorAddress) does not exist")
-//        }
-//
-//        guard let moduleAccount = accountKeeper.account(request: request, address: moduleAccountAddress) else {
-//            throw Cosmos.Error.unknownAddress(reason: "module account \(moduleAccountAddress) does not exist")
-//        }
+/*
+         delegatorAcc := keeper.ak.GetAccount(ctx, delegatorAddr)
+         if delegatorAcc == nil {
+             return sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "account %s does not exist", delegatorAddr)
+         }
 
-        // TODO: Implement isValid
-//        if !amount.isValid {
-//            throw Cosmos.Error.invalidCoins(reason: "\(amount)")
-//        }
+         moduleAcc := keeper.ak.GetAccount(ctx, moduleAccAddr)
+         if moduleAcc == nil {
+             return sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", moduleAccAddr)
+         }
 
-//        let oldCoins = delegatorAccount.coins
+         if !amt.IsValid() {
+             return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, amt.String())
+         }
 
-        // TODO: Implement safeSubtract
-//        let (_, hasNegative) = oldCoins.safeSubtract(amount)
-      
-//        if hasNegative {
-//            throw Cosmos.Error.insufficientFunds(reason: "insufficient account funds; \(oldCoins) < \(amount)")
-//        }
+         oldCoins := delegatorAcc.GetCoins()
 
-        // TODO: Implement trackDelegation
-//        try trackDelegation(delegatorAccount, request.blockHeader().time, amount)
+         _, hasNeg := oldCoins.SafeSub(amt)
+         if hasNeg {
+             return sdkerrors.Wrapf(
+                 sdkerrors.ErrInsufficientFunds, "insufficient account funds; %s < %s", oldCoins, amt,
+             )
+         }
 
-//        accountKeeper.setAccount(request: request, account: delegatorAccount)
+         if err := trackDelegation(delegatorAcc, ctx.BlockHeader().Time, amt); err != nil {
+             return sdkerrors.Wrap(err, "failed to track delegation")
+         }
 
-//        try addCoins(request: request, address: moduleAccountAddress, amount: amount)
+         keeper.ak.SetAccount(ctx, delegatorAcc)
+
+         _, err := keeper.AddCoins(ctx, moduleAccAddr, amt)
+         if err != nil {
+             return err
+         }
+
+         return nil
+         */
     }
     
     public func undelegateCoins(request: Request, moduleAccountAddress: AccountAddress, delegatorAddress: AccountAddress, amount: [Coin]) throws {
         // TODO: Implement
         fatalError()
+        /*
+         delegatorAcc := keeper.ak.GetAccount(ctx, delegatorAddr)
+         if delegatorAcc == nil {
+             return sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "account %s does not exist", delegatorAddr)
+         }
+
+         moduleAcc := keeper.ak.GetAccount(ctx, moduleAccAddr)
+         if moduleAcc == nil {
+             return sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", moduleAccAddr)
+         }
+
+         if !amt.IsValid() {
+             return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, amt.String())
+         }
+
+         oldCoins := moduleAcc.GetCoins()
+
+         newCoins, hasNeg := oldCoins.SafeSub(amt)
+         if hasNeg {
+             return sdkerrors.Wrapf(
+                 sdkerrors.ErrInsufficientFunds, "insufficient account funds; %s < %s", oldCoins, amt,
+             )
+         }
+
+         err := keeper.SetCoins(ctx, moduleAccAddr, newCoins)
+         if err != nil {
+             return err
+         }
+
+         if err := trackUndelegation(delegatorAcc, amt); err != nil {
+             return sdkerrors.Wrap(err, "failed to track undelegation")
+         }
+
+         keeper.ak.SetAccount(ctx, delegatorAcc)
+         return nil
+         */
     }
     
     public func inputOutputCoins(request: Request, inputs: [Input], outputs: [Output]) throws {
         // TODO: Implement
         fatalError()
+        /*
+         // Safety check ensuring that when sending coins the keeper must maintain the
+         // Check supply invariant and validity of Coins.
+         if err := types.ValidateInputsOutputs(inputs, outputs); err != nil {
+             return err
+         }
+
+         for _, in := range inputs {
+             _, err := keeper.SubtractCoins(ctx, in.Address, in.Coins)
+             if err != nil {
+                 return err
+             }
+
+             ctx.EventManager().EmitEvent(
+                 sdk.NewEvent(
+                     sdk.EventTypeMessage,
+                     sdk.NewAttribute(types.AttributeKeySender, in.Address.String()),
+                 ),
+             )
+         }
+
+         for _, out := range outputs {
+             _, err := keeper.AddCoins(ctx, out.Address, out.Coins)
+             if err != nil {
+                 return err
+             }
+
+             ctx.EventManager().EmitEvent(
+                 sdk.NewEvent(
+                     types.EventTypeTransfer,
+                     sdk.NewAttribute(types.AttributeKeyRecipient, out.Address.String()),
+                     sdk.NewAttribute(sdk.AttributeKeyAmount, out.Coins.String()),
+                 ),
+             )
+
+             // Create account if recipient does not exist.
+             //
+             // NOTE: This should ultimately be removed in favor a more flexible approach
+             // such as delegated fee messages.
+             acc := keeper.ak.GetAccount(ctx, out.Address)
+             if acc == nil {
+                 keeper.ak.SetAccount(ctx, keeper.ak.NewAccountWithAddress(ctx, out.Address))
+             }
+         }
+
+         return nil
+         */
     }
     
     public func sendCoins(request: Request, fromAddress: AccountAddress, toAddress: AccountAddress, amount: [Coin]) throws {
         // TODO: Implement
         fatalError()
+        /*
+         ctx.EventManager().EmitEvents(sdk.Events{
+             // This event should have all info (to, from, amount) without looking at other events
+             sdk.NewEvent(
+                 types.EventTypeTransfer,
+                 sdk.NewAttribute(types.AttributeKeyRecipient, toAddr.String()),
+                 sdk.NewAttribute(types.AttributeKeySender, fromAddr.String()),
+                 sdk.NewAttribute(sdk.AttributeKeyAmount, amt.String()),
+             ),
+             sdk.NewEvent(
+                 sdk.EventTypeMessage,
+                 sdk.NewAttribute(types.AttributeKeySender, fromAddr.String()),
+             ),
+         })
+
+         _, err := keeper.SubtractCoins(ctx, fromAddr, amt)
+         if err != nil {
+             return err
+         }
+
+         _, err = keeper.AddCoins(ctx, toAddr, amt)
+         if err != nil {
+             return err
+         }
+
+         return nil
+         */
     }
     
-    public func subtractCoins(requet: Request, address: AccountAddress, amount: [Coin]) throws -> [Coin] {
+    public func subtractCoins(request: Request, address: AccountAddress, amount: [Coin]) throws -> [Coin] {
         // TODO: Implement
-        fatalError()
+        var oldCoins = [Coin]()
+        var spendableCoins = [Coin]()
+        if var acct = self.accountKeeper.account(request: request, address: address) {
+            oldCoins = acct.coins
+            spendableCoins = acct.spendableCoins(blockTime: request.header.time.timeIntervalSince1970)
+        }
+        
+        // For non-vesting accounts, spendable coins will simply be the original coins.
+        // So the check here is sufficient instead of subtracting from oldCoins.
+        // TODO: implement
+//        _, hasNeg := spendableCoins.SafeSub(amt)
+//        if hasNeg {
+//            return amt, sdkerrors.Wrapf(
+//                sdkerrors.ErrInsufficientFunds, "insufficient account funds; %s < %s", spendableCoins, amt,
+//            )
+//        }
+        
+        let newCoins = oldCoins - amount
+        
+        try self.setCoins(request: request, address: address, amount: newCoins)
+        
+        return newCoins
+        /*
+         if !amt.IsValid() {
+             return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, amt.String())
+         }
 
+         oldCoins, spendableCoins := sdk.NewCoins(), sdk.NewCoins()
+
+         acc := keeper.ak.GetAccount(ctx, addr)
+         if acc != nil {
+             oldCoins = acc.GetCoins()
+             spendableCoins = acc.SpendableCoins(ctx.BlockHeader().Time)
+         }
+
+         // For non-vesting accounts, spendable coins will simply be the original coins.
+         // So the check here is sufficient instead of subtracting from oldCoins.
+         _, hasNeg := spendableCoins.SafeSub(amt)
+         if hasNeg {
+             return amt, sdkerrors.Wrapf(
+                 sdkerrors.ErrInsufficientFunds, "insufficient account funds; %s < %s", spendableCoins, amt,
+             )
+         }
+
+         newCoins := oldCoins.Sub(amt) // should not panic as spendable coins was already checked
+         err := keeper.SetCoins(ctx, addr, newCoins)
+
+         return newCoins, err
+         */
     }
     
     // TODO: Check if it's OK to discard the result
     @discardableResult
     public func addCoins(request: Request, address: AccountAddress, amount: [Coin]) throws -> [Coin] {
         // TODO: Implement
-        fatalError()
+        var oldCoins = [Coin]()
+        var spendableCoins = [Coin]()
+        if var acct = self.accountKeeper.account(request: request, address: address) {
+            oldCoins = acct.coins
+            spendableCoins = acct.spendableCoins(blockTime: request.header.time.timeIntervalSince1970)
+        }
+        let newCoins = oldCoins + amount
+        
+        try self.setCoins(request: request, address: address, amount: newCoins)
+        
+        return newCoins
+        
+        /*
+         if !amt.IsValid() {
+             return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, amt.String())
+         }
+
+         oldCoins := keeper.GetCoins(ctx, addr)
+         newCoins := oldCoins.Add(amt...)
+
+         if newCoins.IsAnyNegative() {
+             return amt, sdkerrors.Wrapf(
+                 sdkerrors.ErrInsufficientFunds, "insufficient account funds; %s < %s", oldCoins, amt,
+             )
+         }
+
+         err := keeper.SetCoins(ctx, addr, newCoins)
+         return newCoins, err
+         */
     }
     
     public func setCoins(request: Request, address: AccountAddress, amount: [Coin]) throws {
         // TODO: Implement
-        fatalError()
+        if var acct = self.accountKeeper.account(request: request, address: address) {
+            try acct.set(coins: amount)
+            self.accountKeeper.setAccount(request: request, account: acct as! BaseAccount)
+        } else {
+            // create new account
+            let acct = self.accountKeeper.makeAccountWithAddress(request: request, address: address)
+            self.accountKeeper.setAccount(request: request, account: acct as! BaseAccount)
+        }
+        
+        
+    /*
+         if !amt.IsValid() {
+             sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, amt.String())
+         }
+
+         acc := keeper.ak.GetAccount(ctx, addr)
+         if acc == nil {
+             acc = keeper.ak.NewAccountWithAddress(ctx, addr)
+         }
+
+         err := acc.SetCoins(amt)
+         if err != nil {
+             panic(err)
+         }
+
+         keeper.ak.SetAccount(ctx, acc)
+         return nil
+         */
     }
     
     // GetSendEnabled returns the current SendEnabled
@@ -141,11 +362,21 @@ public final class BaseKeeper: BaseSendKeeper, BankKeeper  {
     public func coins(request: Request, address: AccountAddress) -> [Coin]? {
         // TODO: Implement
         fatalError()
+        /*
+         acc := keeper.ak.GetAccount(ctx, addr)
+         if acc == nil {
+             return sdk.NewCoins()
+         }
+         return acc.GetCoins()
+         */
     }
     
     public func hasCoins(request: Request, address: AccountAddress, amount: [Coin]) -> Bool {
         // TODO: Implement
         fatalError()
+        /*
+         return keeper.GetCoins(ctx, addr).IsAllGTE(amt)
+         */
     }
 }
 
@@ -187,7 +418,7 @@ public protocol SendKeeper: ViewKeeper {
 
     // TODO: Check if it's OK to discard the result
     @discardableResult
-    func subtractCoins(requet: Request, address: AccountAddress, amount: [Coin]) throws -> [Coin]
+    func subtractCoins(request: Request, address: AccountAddress, amount: [Coin]) throws -> [Coin]
     // TODO: Check if it's OK to discard the result
     @discardableResult
     func addCoins(request: Request, address: AccountAddress, amount: [Coin]) throws -> [Coin]

@@ -42,16 +42,8 @@ public struct BaseAccount: AccountProtocol, GenesisAccount {
         self.address = try container.decode(AccountAddress.self, forKey: .address)
         self.coins = try container.decode([Coin].self, forKey: .coins)
         let publicKeyCodable = try container.decodeIfPresent(AnyProtocolCodable.self, forKey: .publicKey)
-       
-        guard let publicKey = publicKeyCodable?.value as? PublicKeyProtocol else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .publicKey,
-                in: container,
-                debugDescription: "Invalid public key type"
-            )
-        }
         
-        self.publicKey = publicKey
+        self.publicKey = publicKeyCodable?.value as? PublicKeyProtocol
         
         let accountNumberStr = try container.decode(String.self, forKey: .accountNumber)
         

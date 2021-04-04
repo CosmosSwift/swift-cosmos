@@ -5,9 +5,9 @@ import Foundation
 // CONTRACT: A coin will never hold a negative amount of any denomination.
 public struct Coin: Codable {
     let denomination: String
-    let amount: UInt
+    let amount: Int
     
-    public init(denomination: String, amount: UInt) {
+    public init(denomination: String, amount: Int) {
         self.denomination = denomination
         self.amount = amount
     }
@@ -16,8 +16,8 @@ public struct Coin: Codable {
         case denomination = "denom"
         case amount
     }
-    
 }
+
 extension Coin {
     public init?(string: String) {
         // get the first char which is not number (or . when we handle DecCoin)
@@ -29,7 +29,7 @@ extension Coin {
             return nil
         }
         
-        let amount = UInt(string[amountRange]) ?? 0
+        let amount = Int(string[amountRange]) ?? 0
         var denomination = string
         denomination.removeSubrange(amountRange)
         self.init(denomination: denomination, amount: amount)
@@ -40,7 +40,7 @@ extension Coin {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.denomination = try container.decode(String.self, forKey: .denomination)
         let amountStr = try container.decode(String.self, forKey: .amount)
-        guard let amount = UInt(amountStr) else {
+        guard let amount = Int(amountStr) else {
             throw Cosmos.Error.generic(reason: "Decoding: Invalid amount: \(amountStr)")
         }
         self.amount = amount
@@ -61,6 +61,18 @@ extension Coin {
 // Adds amounts of two coins with same denom. If the coins differ in denom then
 // it panics.
 extension Coin {
+    public static func - (lhs: Coin, rhs: Coin) -> Coin {
+        if lhs.denomination != rhs.denomination {
+            fatalError("invalid coin denominations; \(lhs.denomination), \(rhs.denomination)")
+        }
+        
+        return Coin(
+            denomination: lhs.denomination,
+            amount: lhs.amount - rhs.amount
+        )
+    }
+
+
     public static func + (lhs: Coin, rhs: Coin) -> Coin {
         if lhs.denomination != rhs.denomination {
             fatalError("invalid coin denominations; \(lhs.denomination), \(rhs.denomination)")
@@ -211,71 +223,27 @@ extension Array where Element == Coin {
     //
     // CONTRACT: Add will never return Coins where one Coin has a non-positive
     // amount. In otherwords, IsValid will always return true.
-    public static func + (lhs: [Coin], rhs: [Coin]) -> [Coin] {
-        lhs.safeAdd(other: rhs)
-    }
-
-    // safeAdd will perform addition of two coins sets. If both coin sets are
-    // empty, then an empty set is returned. If only a single set is empty, the
-    // other set is returned. Otherwise, the coins are compared in order of their
-    // denomination and addition only occurs when the denominations match, otherwise
-    // the coin is simply added to the sum assuming it's not zero.
-    func safeAdd(other coinsB: [Coin]) -> [Coin] {
-        var sum: [Coin] = []
-        var indexA = 0
-        var indexB = 0
-        let lenA = self.count
-        let lenB = coinsB.count
-
-        while true {
-            if indexA == lenA {
-                if indexB == lenB {
-                    // return nil coins if both sets are empty
-                    return [Coin]()
-                }
-
-                // return set B (excluding zero coins) if set A is empty
-                
-                return sum + (Array(coinsB.suffix(from: indexB)).removingZeroCoins())
-            } else if indexB == lenB {
-                // return set A (excluding zero coins) if set B is empty
-                return sum + (Array(self.suffix(from: indexA)).removingZeroCoins())
-            }
-
-            let coinA = self[indexA]
-            let coinB = coinsB[indexB]
-
-            let result = coinA.denomination.compare(coinB.denomination)
-
-            switch result {
-            // coin A denom < coin B denom
-            case .orderedAscending:
-                if !coinA.isZero {
-                    sum.append(coinA)
-                }
-
-                indexA += 1
-            // coin A denom == coin B denom
-            case .orderedSame:
-                let result = coinA + coinB
-                
-                if result.isZero {
-                    sum.append(result)
-                }
-
-                indexA += 1
-                indexB += 1
-                
-            // coin A denom > coin B denom
-            case .orderedDescending:
-                if !coinB.isZero {
-                    sum.append(coinB)
-                }
-
-                indexB += 1
-            }
+    public static func +(lhs: [Coin], rhs: [Coin]) -> [Coin] {
+        var dict = lhs.reduce(into: [String:Int](), { $0[$1.denomination] = $1.amount } )
+        
+        for coin in rhs {
+            dict[coin.denomination, default: 0] += coin.amount
         }
+        
+        return dict.keys.map { Coin(denomination: $0, amount: dict[$0]!) }
     }
+        
+    public static func - (lhs: [Coin], rhs: [Coin]) -> [Coin] {
+        
+        var dict = lhs.reduce(into: [String:Int](), { $0[$1.denomination] = $1.amount } )
+        
+        for coin in rhs {
+            dict[coin.denomination, default: 0] -= coin.amount
+        }
+        
+        return dict.keys.map { Coin(denomination: $0, amount: dict[$0]!) }
+    }
+
     
     // removeZeroCoins removes all zero coins from the given coin set
     func removingZeroCoins() -> [Coin] {
@@ -300,7 +268,7 @@ extension Array where Element == Coin {
     }
      
     // Returns the amount of a denom from coins
-    public func amountOf(denomination: String) -> UInt {
+    public func amountOf(denomination: String) -> Int {
         [Coin].mustValidate(denomination: denomination)
 
         switch count {
