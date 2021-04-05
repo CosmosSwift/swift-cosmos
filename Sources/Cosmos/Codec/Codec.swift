@@ -85,7 +85,7 @@ public class Codec {
     }
 
     // Panics if error.
-    func mustMarshalBinaryBare<T: Encodable>(value: T) -> Data {
+    public func mustMarshalBinaryBare<T: Encodable>(value: T) -> Data {
         try! marshalBinaryBare(value: value)
     }
 
@@ -130,6 +130,10 @@ public class Codec {
         return try decoder.decode(T.self, from: data)
     }
     
+    public func mustUnmarshalBinaryBare<T: Decodable>(data: Data) -> T {
+        try! unmarshalBinaryBare(data: data)
+    }
+
     // attempt to make some pretty json
     public func marshalJSONIndent<T: Encodable>(value: T) throws -> Data {
         try encoder.encode(value)

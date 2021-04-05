@@ -9,7 +9,7 @@ public final class Request {
     public var header: Header
     let chainID: String
     var transactionData: Data = Data()
-    let logger: Logger
+    public let logger: Logger
     var voteInfo: [VoteInfo] = []
     public var gasMeter: GasMeter
     var blockGasMeter: GasMeter? = nil

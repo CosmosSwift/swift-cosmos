@@ -4,7 +4,7 @@ import Cosmos
 
 
 public enum FeeStructure {
-    case fees([Coin])
+    case fees(Coins)
     case gasPrice([DecimalCoin])
 }
 
@@ -48,7 +48,7 @@ public struct TransactionBuilder<Tx: Transaction> {
     }
     
     func buildSignMessage(messages: [Message]) throws -> StandardSignedMessage {
-        let finalFees: [Coin]
+        let finalFees: Coins
         let limit: UInt64
         switch gas {
         case .auto:
@@ -68,7 +68,7 @@ public struct TransactionBuilder<Tx: Transaction> {
                 let fee = gasPrice.amount * gasDecimal
                 let roundedFee = fee.rounded(0, .up)
                 // wrap it in an NSDecimalNumber since Decimal can't be cast to uint itself.
-                let amount = Int(NSDecimalNumber(decimal: roundedFee))
+                let amount = UInt(NSDecimalNumber(decimal: roundedFee))
                 return Coin(denomination: gasPrice.denomination, amount: amount)
             }
             finalFees = coins

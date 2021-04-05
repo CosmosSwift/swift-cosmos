@@ -1,13 +1,14 @@
 import Foundation
+import CosmosProto
 
 // Coin hold some amount of one currency.
 //
 // CONTRACT: A coin will never hold a negative amount of any denomination.
 public struct Coin: Codable {
-    let denomination: String
-    let amount: Int
+    public let denomination: String
+    public let amount: UInt
     
-    public init(denomination: String, amount: Int) {
+    public init(denomination: String, amount: UInt) {
         self.denomination = denomination
         self.amount = amount
     }
@@ -15,6 +16,21 @@ public struct Coin: Codable {
     enum CodingKeys: String, CodingKey {
         case denomination = "denom"
         case amount
+    }
+}
+
+public extension Coin {
+    init(_ coin: Cosmos_Base_V1beta1_Coin) {
+        self.denomination = coin.denom
+        self.amount = UInt(coin.amount)!
+    }
+}
+
+public extension Cosmos_Base_V1beta1_Coin {
+    init(_ coin: Coin) {
+        self.init()
+        self.denom = coin.denomination
+        self.amount = "\(coin.amount)"
     }
 }
 
@@ -29,7 +45,7 @@ extension Coin {
             return nil
         }
         
-        let amount = Int(string[amountRange]) ?? 0
+        let amount = UInt(string[amountRange]) ?? 0
         var denomination = string
         denomination.removeSubrange(amountRange)
         self.init(denomination: denomination, amount: amount)
@@ -40,7 +56,7 @@ extension Coin {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.denomination = try container.decode(String.self, forKey: .denomination)
         let amountStr = try container.decode(String.self, forKey: .amount)
-        guard let amount = Int(amountStr) else {
+        guard let amount = UInt(amountStr) else {
             throw Cosmos.Error.generic(reason: "Decoding: Invalid amount: \(amountStr)")
         }
         self.amount = amount
@@ -52,18 +68,44 @@ extension Coin {
         try container.encode("\(amount)", forKey: .amount)
     }
     
+    // Validate returns an error if the Coin has a negative amount or if
+    // the denom is invalid.
+    func validate() throws {
+        try Coins.validate(denomination: denomination)
+    }
+
+    // IsValid returns true if the Coin has a non-negative amount and the denom is valid.
+    public var isValid: Bool {
+        do {
+            try validate()
+            return true
+        } catch {
+            return false
+        }
+    }
+
     var isZero: Bool {
         amount == 0
     }
 }
 
+extension Coin: CustomStringConvertible {
+    public var description: String {
+        "\(amount)\(denomination)"
+    }
+}
 
 // Adds amounts of two coins with same denom. If the coins differ in denom then
 // it panics.
 extension Coin {
+    #warning("operations should not lead to fatalError()")
     public static func - (lhs: Coin, rhs: Coin) -> Coin {
         if lhs.denomination != rhs.denomination {
             fatalError("invalid coin denominations; \(lhs.denomination), \(rhs.denomination)")
+        }
+        
+        if lhs.amount < rhs.amount {
+            fatalError("coins substraction leading to negative amount ; \(lhs.amount) < \(rhs.amount)")
         }
         
         return Coin(
@@ -72,7 +114,7 @@ extension Coin {
         )
     }
 
-
+    #warning("operations should not lead to fatalError()")
     public static func + (lhs: Coin, rhs: Coin) -> Coin {
         if lhs.denomination != rhs.denomination {
             fatalError("invalid coin denominations; \(lhs.denomination), \(rhs.denomination)")
@@ -91,8 +133,38 @@ extension Coin: Comparable {
     }
 }
 
-extension Array where Element == Coin {
-    public static func == (lhs: [Coin], rhs: [Coin]) -> Bool {
+public typealias Coins = [Coin]
+
+extension Coins {
+    public init(_ coin: Coin) {
+        self.init([coin])
+    }
+    
+    public init(_ coins: Coins) {
+        let newCoins = coins.sanitized()
+        
+        do {
+            try newCoins.validate()
+        } catch {
+            fatalError("invalid coin set \(newCoins): \(error)")
+        }
+        
+        self = newCoins
+    }
+    
+    private func sanitized() -> Coins {
+        let newCoins = self.removingZeroCoins()
+        
+        guard !newCoins.isEmpty else {
+            return []
+        }
+        
+        return newCoins.sorted()
+    }
+}
+
+extension Coins {
+    public static func == (lhs: Coins, rhs: Coins) -> Bool {
         if lhs.count != rhs.count {
             return false
         }
@@ -109,8 +181,7 @@ extension Array where Element == Coin {
     
     public init?(string: String) {
         let coinStrArray = string.split(separator: ",")
-        
-        var coins: [Coin] = []
+        var coins: Coins = []
         
         for coinStr in coinStrArray {
             guard let coin = Coin(string: String(coinStr)) else {
@@ -122,6 +193,10 @@ extension Array where Element == Coin {
     }
 }
 
+struct ValidationError: Swift.Error, CustomStringConvertible {
+    let description: String
+}
+
 extension Array where Element == Coin {
     // TODO: Implement this correctly
     // MarshalJSON implements a custom JSON marshaller for the Coins type to allow
@@ -130,7 +205,7 @@ extension Array where Element == Coin {
         let encoder = JSONEncoder()
 
         if self.isEmpty {
-            return try encoder.encode([Coin]())
+            return try encoder.encode(Coins())
         }
 
         return try encoder.encode(self)
@@ -145,49 +220,57 @@ extension Array where Element == Coin {
         return true
     }
     
-    // IsValid asserts the Coins are sorted, have positive amount,
-    // and Denom does not contain upper case characters.
-    public var isValid: Bool {
+    // Validate checks that the Coins are sorted, have positive amount, with a valid and unique
+    // denomination (i.e no duplicates). Otherwise, it returns an error.
+    func validate() throws {
         switch self.count {
         case 0:
-            return true
+            return
+
         case 1:
-            do {
-                try Self.validate(denomination: self[0].denomination)
-                return true
-            } catch {
-                return false
-            }
+            try Self.validate(denomination: self[0].denomination)
+            return
+
         default:
             // check single coin case
-            
-            if ![self[0]].isValid {
-                return false
-            }
+            try [self[0]].validate()
 
             var lowDenomination = self[0].denomination
+            var seenDenominations: [String: Void] = [:]
+            seenDenominations[lowDenomination] = ()
             
             for coin in self.suffix(1) {
-                if coin.denomination.lowercased() != coin.denomination {
-                    return false
+                if seenDenominations[coin.denomination] != nil {
+                    throw ValidationError(description: "duplicate denomination \(coin.denomination)")
                 }
                 
-                if coin.denomination <= lowDenomination {
-                    return false
+                try Self.validate(denomination: coin.denomination)
+                
+                guard coin.denomination > lowDenomination else {
+                    throw ValidationError(description: "denomination \(coin.denomination) is not sorted")
                 }
 
                 // we compare each coin against the last denom
                 lowDenomination = coin.denomination
+                seenDenominations[coin.denomination] = ()
             }
-
-            return true
         }
     }
 
-    
+    // IsValid asserts the Coins are sorted, have positive amount,
+    // and Denom does not contain upper case characters.
+    public var isValid: Bool {
+        do {
+            try validate()
+            return true
+        } catch {
+            return false
+        }
+    }
+
     // IsAllGT returns true if for every denom in coinsB,
     // the denom is present at a greater amount in coins.
-    public func isAllGreaterThan(coins: [Coin]) -> Bool {
+    public func isAllGreaterThan(coins: Coins) -> Bool {
         if isEmpty {
             return false
         }
@@ -223,8 +306,8 @@ extension Array where Element == Coin {
     //
     // CONTRACT: Add will never return Coins where one Coin has a non-positive
     // amount. In otherwords, IsValid will always return true.
-    public static func +(lhs: [Coin], rhs: [Coin]) -> [Coin] {
-        var dict = lhs.reduce(into: [String:Int](), { $0[$1.denomination] = $1.amount } )
+    public static func +(lhs: Coins, rhs: Coins) -> Coins {
+        var dict = lhs.reduce(into: [String:UInt](), { $0[$1.denomination] = $1.amount } )
         
         for coin in rhs {
             dict[coin.denomination, default: 0] += coin.amount
@@ -233,12 +316,17 @@ extension Array where Element == Coin {
         return dict.keys.map { Coin(denomination: $0, amount: dict[$0]!) }
     }
         
-    public static func - (lhs: [Coin], rhs: [Coin]) -> [Coin] {
+    public static func substract(from lhs: Coins, this rhs: Coins) throws -> Coins {
         
-        var dict = lhs.reduce(into: [String:Int](), { $0[$1.denomination] = $1.amount } )
+        var dict = lhs.reduce(into: [String:UInt](), { $0[$1.denomination] = $1.amount } )
         
         for coin in rhs {
-            dict[coin.denomination, default: 0] -= coin.amount
+            let diff = dict[coin.denomination, default: 0] - coin.amount
+            if diff < 0 {
+                throw CosmosError.errInvalidCoins
+            } else {
+                dict[coin.denomination] = diff
+            }
         }
         
         return dict.keys.map { Coin(denomination: $0, amount: dict[$0]!) }
@@ -246,13 +334,13 @@ extension Array where Element == Coin {
 
     
     // removeZeroCoins removes all zero coins from the given coin set
-    func removingZeroCoins() -> [Coin] {
+    func removingZeroCoins() -> Coins {
         return self.filter({ !$0.isZero })
     }
 
     // DenomsSubsetOf returns true if receiver's denom set
     // is subset of coinsB's denoms.
-    func denominationIsSubset(of coins: [Coin]) -> Bool {
+    func denominationIsSubset(of coins: Coins) -> Bool {
         // more denoms in B than in receiver
         if count > coins.count {
             return false
@@ -268,8 +356,8 @@ extension Array where Element == Coin {
     }
      
     // Returns the amount of a denom from coins
-    public func amountOf(denomination: String) -> Int {
-        [Coin].mustValidate(denomination: denomination)
+    public func amountOf(denomination: String) -> UInt {
+    Coins.mustValidate(denomination: denomination)
 
         switch count {
         case 0:
@@ -297,9 +385,11 @@ extension Array where Element == Coin {
             }
         }
     }
-    
-    static let denominationRegex = "[a-z][a-z0-9]{2,15}"
+}
 
+let denominationRegex = "[a-z][a-z0-9]{2,15}"
+
+extension Coins {
     // ValidateDenom validates a denomination string returning an error if it is
     // invalid.
     public static func validate(denomination: String) throws {

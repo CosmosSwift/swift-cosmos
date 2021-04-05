@@ -5,10 +5,10 @@ import Tendermint
 // gas to be used by the transaction. The ratio yields an effective "gasprice",
 // which must be above some miminum to be accepted into the mempool.
 public struct StandardFee {
-    public let amount: [Coin]
+    public let amount: Coins
     public let gas: UInt64
     
-    public init(amount: [Coin], gas: UInt64) {
+    public init(amount: Coins, gas: UInt64) {
         self.amount = amount
         self.gas = gas
     }

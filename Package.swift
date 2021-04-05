@@ -13,6 +13,7 @@ let package = Package(
         // X Modules
         .library(name: "Auth", targets: ["Auth"]),
         .library(name: "Bank", targets: ["Bank"]),
+        .library(name: "Capability", targets: ["Capability"]),
         .library(name: "GenUtil", targets: ["GenUtil"]),
         .library(name: "Governance", targets: ["Governance"]),
         .library(name: "Params", targets: ["Params"]),
@@ -25,7 +26,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "ABCI", url: "https://github.com/CosmosSwift/swift-abci", .upToNextMajor(from: "0.50.0")),
-        .package(name: "Tendermint", url: "https://github.com/CosmosSwift/swift-tendermint", .branch("main")),
+        .package(name: "Tendermint", url: "https://github.com/CosmosSwift/swift-tendermint", .branch("feature/ibc")),
         .package(name: "iAVLPlus", url: "https://github.com/CosmosSwift/swift-iavlplus", .branch("master")),
         .package(name: "swift-log", url: "https://github.com/apple/swift-log.git", .upToNextMajor(from: "1.0.0")),
         .package(name: "swift-crypto", url: "https://github.com/apple/swift-crypto.git", .upToNextMajor(from: "1.0.0")),
@@ -90,6 +91,13 @@ let package = Package(
                 .target(name: "Params"),
             ],
             path: "./Sources/X/Bank"
+        ),
+        .target(
+            name: "Capability",
+            dependencies: [
+                .target(name: "Cosmos"),
+            ],
+            path: "./Sources/X/Capability"
         ),
         .target(
             name: "GenUtil",

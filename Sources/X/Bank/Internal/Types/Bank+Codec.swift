@@ -12,3 +12,4 @@ extension BankAppModuleBasic {
         MultiSendMessage.registerMetaType()
     }
 }
+

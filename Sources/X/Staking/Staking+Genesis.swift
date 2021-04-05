@@ -103,8 +103,8 @@ extension StakingKeeper {
 //            }
 //        }
 
-        let bondedCoins = [Coin(denomination: data.parameters.bondDenomination, amount: Int(bondedTokens))]
-        let notBondedCoins = [Coin(denomination: data.parameters.bondDenomination, amount: Int(notBondedTokens))]
+        let bondedCoins = [Coin(denomination: data.parameters.bondDenomination, amount: bondedTokens)]
+        let notBondedCoins = [Coin(denomination: data.parameters.bondDenomination, amount: notBondedTokens)]
 
         // check if the unbonded and bonded pools accounts exists
         guard var bondedPool = self.bondedPool(request: request) else {
