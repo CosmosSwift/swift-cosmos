@@ -46,4 +46,9 @@ public struct KeyTable {
         let type = Swift.type(of: parameterSetPair.value.value)
         map[key] = Attribute(type: type, valueValidatorFunction: parameterSetPair.validatorFunction)
     }
+    
+    // RegisterParamSet registers multiple ParamSetPairs from a ParamSet in a KeyTable.
+    public init(parameterSet: ParameterSet) {
+        self.init(pairs: parameterSet.parameterSetPairs)
+    }
 }

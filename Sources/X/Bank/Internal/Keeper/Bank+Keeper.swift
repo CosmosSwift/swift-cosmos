@@ -9,14 +9,14 @@ public protocol BankKeeper: SendKeeper {
         request: Request,
         delegatorAddress: AccountAddress,
         moduleAccountAddress: AccountAddress,
-        amount: [Coin]
+        amount: Coins
     ) throws
     
     func undelegateCoins(
         request: Request,
         moduleAccountAddress: AccountAddress,
         delegatorAddress: AccountAddress,
-        amount: [Coin]
+        amount: Coins
     ) throws
 }
 
@@ -48,7 +48,7 @@ public final class BaseKeeper: BaseSendKeeper, BankKeeper  {
     // vesting and vested coins.
     // The coins are then transferred from the delegator address to a ModuleAccount address.
     // If any of the delegation amounts are negative, an error is returned.
-    public func delegateCoins(request: Request, delegatorAddress: AccountAddress, moduleAccountAddress: AccountAddress, amount: [Coin]) throws {
+    public func delegateCoins(request: Request, delegatorAddress: AccountAddress, moduleAccountAddress: AccountAddress, amount: Coins) throws {
         // TODO: Implement
         fatalError()
 //        guard let delegatorAccount = accountKeeper.account(request: request, address: delegatorAddress) else {
@@ -81,7 +81,7 @@ public final class BaseKeeper: BaseSendKeeper, BankKeeper  {
 //        try addCoins(request: request, address: moduleAccountAddress, amount: amount)
     }
     
-    public func undelegateCoins(request: Request, moduleAccountAddress: AccountAddress, delegatorAddress: AccountAddress, amount: [Coin]) throws {
+    public func undelegateCoins(request: Request, moduleAccountAddress: AccountAddress, delegatorAddress: AccountAddress, amount: Coins) throws {
         // TODO: Implement
         fatalError()
     }
@@ -91,12 +91,12 @@ public final class BaseKeeper: BaseSendKeeper, BankKeeper  {
         fatalError()
     }
     
-    public func sendCoins(request: Request, fromAddress: AccountAddress, toAddress: AccountAddress, amount: [Coin]) throws {
+    public func sendCoins(request: Request, fromAddress: AccountAddress, toAddress: AccountAddress, amount: Coins) throws {
         // TODO: Implement
         fatalError()
     }
     
-    public func subtractCoins(requet: Request, address: AccountAddress, amount: [Coin]) throws -> [Coin] {
+    public func subtractCoins(requet: Request, address: AccountAddress, amount: Coins) throws -> Coins {
         // TODO: Implement
         fatalError()
 
@@ -104,12 +104,12 @@ public final class BaseKeeper: BaseSendKeeper, BankKeeper  {
     
     // TODO: Check if it's OK to discard the result
     @discardableResult
-    public func addCoins(request: Request, address: AccountAddress, amount: [Coin]) throws -> [Coin] {
+    public func addCoins(request: Request, address: AccountAddress, amount: Coins) throws -> Coins {
         // TODO: Implement
         fatalError()
     }
     
-    public func setCoins(request: Request, address: AccountAddress, amount: [Coin]) throws {
+    public func setCoins(request: Request, address: AccountAddress, amount: Coins) throws {
         // TODO: Implement
         fatalError()
     }
@@ -138,12 +138,12 @@ public final class BaseKeeper: BaseSendKeeper, BankKeeper  {
         blacklistedAddresses[address.description] != nil
     }
     
-    public func coins(request: Request, address: AccountAddress) -> [Coin]? {
+    public func coins(request: Request, address: AccountAddress) -> Coins? {
         // TODO: Implement
         fatalError()
     }
     
-    public func hasCoins(request: Request, address: AccountAddress, amount: [Coin]) -> Bool {
+    public func hasCoins(request: Request, address: AccountAddress, amount: Coins) -> Bool {
         // TODO: Implement
         fatalError()
     }
@@ -183,15 +183,15 @@ public class BaseViewKeeper {
 // between accounts without the possibility of creating coins.
 public protocol SendKeeper: ViewKeeper {
     func inputOutputCoins(request: Request, inputs: [Input], outputs: [Output]) throws
-    func sendCoins(request: Request, fromAddress: AccountAddress, toAddress: AccountAddress, amount: [Coin]) throws
+    func sendCoins(request: Request, fromAddress: AccountAddress, toAddress: AccountAddress, amount: Coins) throws
 
     // TODO: Check if it's OK to discard the result
     @discardableResult
-    func subtractCoins(requet: Request, address: AccountAddress, amount: [Coin]) throws -> [Coin]
+    func subtractCoins(requet: Request, address: AccountAddress, amount: Coins) throws -> Coins
     // TODO: Check if it's OK to discard the result
     @discardableResult
-    func addCoins(request: Request, address: AccountAddress, amount: [Coin]) throws -> [Coin]
-    func setCoins(request: Request, address: AccountAddress, amount: [Coin]) throws
+    func addCoins(request: Request, address: AccountAddress, amount: Coins) throws -> Coins
+    func setCoins(request: Request, address: AccountAddress, amount: Coins) throws
 
     func isSendEnabled(request: Request) -> Bool
     func setSendEnabled(request: Request, enabled: Bool)
@@ -202,6 +202,6 @@ public protocol SendKeeper: ViewKeeper {
 // ViewKeeper defines a module interface that facilitates read only access to
 // account balances.
 public protocol ViewKeeper {
-    func coins(request: Request, address: AccountAddress) -> [Coin]?
-    func hasCoins(request: Request, address: AccountAddress, amount: [Coin]) -> Bool
+    func coins(request: Request, address: AccountAddress) -> Coins?
+    func hasCoins(request: Request, address: AccountAddress, amount: Coins) -> Bool
 }

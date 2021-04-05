@@ -23,12 +23,20 @@ public protocol Account: ProtocolCodable, CustomStringConvertible {
     var sequence: UInt64 { get }
     mutating func set(sequence: UInt64) throws
 
-    var coins: [Coin] { get }
-    mutating func set(coins: [Coin]) throws
+    var coins: Coins { get }
+    mutating func set(coins: Coins) throws
 
     // Calculates the amount of coins that can be sent to other accounts given
     // the current time.
-    func spendableCoins(blockTime: TimeInterval) -> [Coin]
+    func spendableCoins(blockTime: TimeInterval) -> Coins
+}
+
+// ModuleAccountI defines an account interface for modules that hold tokens in
+// an escrow.
+public protocol ModuleAccount: Account {
+    var name: String { get }
+    var permissions: [String] { get }
+    func has(permission: String) -> Bool
 }
 
 // GenesisAccounts defines a slice of GenesisAccount objects

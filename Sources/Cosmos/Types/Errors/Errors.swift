@@ -7,22 +7,27 @@ extension CosmosError {
     
     // errInternal should never be exposed, but we reserve this code for non-specified errors
     //nolint
-    static let `internal` = register(codespace: undefinedCodespace, code: 1, description: "internal")
+    public static let `internal` = Self.register(codespace: Self.undefinedCodespace, code: 1, description: "internal")
     
     // ErrUnknownRequest to doc
-    static let unknownRequest = register(codespace: rootCodespace, code: 6, description: "unknown request")
+    public static let unknownRequest = Self.register(codespace: Self.rootCodespace, code: 6, description: "unknown request")
+    
+    // ErrInvalidAddress to doc
+    public static let invalidAddress = Self.register(codespace: Self.rootCodespace, code: 7, description: "invalid address")
+
+    // ErrInvalidCoins to doc
+    public static let invalidCoins = Self.register(codespace: Self.rootCodespace, code: 10, description: "invalid coins")
 
     // ErrOutOfGas to doc
-    static let outOfGas = register(codespace: rootCodespace, code: 11, description: "out of gas")
+    public static let outOfGas = Self.register(codespace: Self.rootCodespace, code: 11, description: "out of gas")
     
     // ErrInvalidRequest defines an ABCI typed error where the request contains
     // invalid data.
-    static let invalidRequest = register(codespace: rootCodespace, code: 18, description: "invalid request")
+    public static let invalidRequest = Self.register(codespace: Self.rootCodespace, code: 18, description: "invalid request")
 
     // ErrPanic is only set when we recover from a panic, so we know to
     // redact potentially sensitive system info
-    static let panic = register(codespace: undefinedCodespace, code: 111222, description: "panic")
-
+    static let panic = Self.register(codespace: Self.undefinedCodespace, code: 111222, description: "panic")
 }
 
 public struct CosmosError: Swift.Error, Equatable {
@@ -48,7 +53,7 @@ public struct CosmosError: Swift.Error, Equatable {
     // twice. Attempt to reuse an error code results in panic.
     //
     // Use this function only during a program startup phase.
-    static func register(codespace: String, code: UInt32, description: String) -> CosmosError {
+    public static func register(codespace: String, code: UInt32, description: String) -> CosmosError {
         if let error = getUsed(codespace: codespace, code: code) {
             fatalError("error with code \(code) is already registered: \(error.description)")
         }
@@ -96,10 +101,14 @@ public struct CosmosError: Swift.Error, Equatable {
         )
     }
     
-    struct WrappedError: Swift.Error {
+    struct WrappedError: Swift.Error, CustomStringConvertible {
         // This error layer description.
         let message: String
         // The underlying error that triggered this one.
         let parent: Swift.Error
+        
+        var description: String {
+            "\(message): \(parent.localizedDescription)"
+        }
     }
 }
