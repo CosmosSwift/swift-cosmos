@@ -12,7 +12,7 @@ public struct BaseAccount: Account, GenesisAccount {
     )
     
     public private(set) var address: AccountAddress
-    public private(set) var coins: [Coin]
+    public private(set) var coins: Coins
     public private(set) var publicKey: PublicKeyProtocol?
     public private(set) var accountNumber: UInt64
     public private(set) var sequence: UInt64
@@ -20,7 +20,7 @@ public struct BaseAccount: Account, GenesisAccount {
     // NewBaseAccount creates a new BaseAccount object
     public init(
         address: AccountAddress,
-        coins: [Coin] = [],
+        coins: Coins = [],
         publicKey: PublicKeyProtocol? = nil,
         accountNumber: UInt64 = 0,
         sequence: UInt64 = 0
@@ -40,7 +40,7 @@ public struct BaseAccount: Account, GenesisAccount {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.address = try container.decode(AccountAddress.self, forKey: .address)
-        self.coins = try container.decode([Coin].self, forKey: .coins)
+        self.coins = try container.decode(Coins.self, forKey: .coins)
         let publicKeyCodable = try container.decodeIfPresent(AnyProtocolCodable.self, forKey: .publicKey)
        
         guard let publicKey = publicKeyCodable?.value as? PublicKeyProtocol else {
@@ -104,7 +104,7 @@ public struct BaseAccount: Account, GenesisAccount {
         self.sequence = sequence
     }
     
-    public mutating func set(coins: [Coin]) throws {
+    public mutating func set(coins: Coins) throws {
         self.coins = coins
     }
     
@@ -125,13 +125,13 @@ public struct BaseAccount: Account, GenesisAccount {
     
     // SpendableCoins returns the total set of spendable coins. For a base account,
     // this is simply the base coins.
-    public func spendableCoins(blockTime: TimeInterval) -> [Coin] {
+    public func spendableCoins(blockTime: TimeInterval) -> Coins {
         coins
     }
     
     struct BaseAccountPretty: Codable {
         let address: AccountAddress
-        let coins: [Coin]
+        let coins: Coins
         let publicKey: String
         let accountNumber: UInt64
         let sequence: UInt64

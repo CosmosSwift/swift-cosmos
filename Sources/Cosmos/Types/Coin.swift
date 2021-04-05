@@ -71,7 +71,7 @@ extension Coin {
     // Validate returns an error if the Coin has a negative amount or if
     // the denom is invalid.
     func validate() throws {
-        try Cosmos.validate(denomination: denomination)
+        try Coins.validate(denomination: denomination)
     }
 
     // IsValid returns true if the Coin has a non-negative amount and the denom is valid.
@@ -116,8 +116,38 @@ extension Coin: Comparable {
     }
 }
 
-extension Array where Element == Coin {
-    public static func == (lhs: [Coin], rhs: [Coin]) -> Bool {
+public typealias Coins = [Coin]
+
+extension Coins {
+    public init(_ coin: Coin) {
+        self.init([coin])
+    }
+    
+    public init(_ coins: Coins) {
+        let newCoins = coins.sanitized()
+        
+        do {
+            try newCoins.validate()
+        } catch {
+            fatalError("invalid coin set \(newCoins): \(error)")
+        }
+        
+        self = newCoins
+    }
+    
+    private func sanitized() -> Coins {
+        let newCoins = self.removingZeroCoins()
+        
+        guard !newCoins.isEmpty else {
+            return []
+        }
+        
+        return newCoins.sorted()
+    }
+}
+
+extension Coins {
+    public static func == (lhs: Coins, rhs: Coins) -> Bool {
         if lhs.count != rhs.count {
             return false
         }
@@ -134,8 +164,7 @@ extension Array where Element == Coin {
     
     public init?(string: String) {
         let coinStrArray = string.split(separator: ",")
-        
-        var coins: [Coin] = []
+        var coins: Coins = []
         
         for coinStr in coinStrArray {
             guard let coin = Coin(string: String(coinStr)) else {
@@ -147,6 +176,10 @@ extension Array where Element == Coin {
     }
 }
 
+struct ValidationError: Swift.Error, CustomStringConvertible {
+    let description: String
+}
+
 extension Array where Element == Coin {
     // TODO: Implement this correctly
     // MarshalJSON implements a custom JSON marshaller for the Coins type to allow
@@ -155,7 +188,7 @@ extension Array where Element == Coin {
         let encoder = JSONEncoder()
 
         if self.isEmpty {
-            return try encoder.encode([Coin]())
+            return try encoder.encode(Coins())
         }
 
         return try encoder.encode(self)
@@ -170,49 +203,57 @@ extension Array where Element == Coin {
         return true
     }
     
-    // IsValid asserts the Coins are sorted, have positive amount,
-    // and Denom does not contain upper case characters.
-    public var isValid: Bool {
+    // Validate checks that the Coins are sorted, have positive amount, with a valid and unique
+    // denomination (i.e no duplicates). Otherwise, it returns an error.
+    func validate() throws {
         switch self.count {
         case 0:
-            return true
+            return
+
         case 1:
-            do {
-                try Cosmos.validate(denomination: self[0].denomination)
-                return true
-            } catch {
-                return false
-            }
+            try Self.validate(denomination: self[0].denomination)
+            return
+
         default:
             // check single coin case
-            
-            if ![self[0]].isValid {
-                return false
-            }
+            try [self[0]].validate()
 
             var lowDenomination = self[0].denomination
+            var seenDenominations: [String: Void] = [:]
+            seenDenominations[lowDenomination] = ()
             
             for coin in self.suffix(1) {
-                if coin.denomination.lowercased() != coin.denomination {
-                    return false
+                if seenDenominations[coin.denomination] != nil {
+                    throw ValidationError(description: "duplicate denomination \(coin.denomination)")
                 }
                 
-                if coin.denomination <= lowDenomination {
-                    return false
+                try Self.validate(denomination: coin.denomination)
+                
+                guard coin.denomination > lowDenomination else {
+                    throw ValidationError(description: "denomination \(coin.denomination) is not sorted")
                 }
 
                 // we compare each coin against the last denom
                 lowDenomination = coin.denomination
+                seenDenominations[coin.denomination] = ()
             }
-
-            return true
         }
     }
 
-    
+    // IsValid asserts the Coins are sorted, have positive amount,
+    // and Denom does not contain upper case characters.
+    public var isValid: Bool {
+        do {
+            try validate()
+            return true
+        } catch {
+            return false
+        }
+    }
+
     // IsAllGT returns true if for every denom in coinsB,
     // the denom is present at a greater amount in coins.
-    public func isAllGreaterThan(coins: [Coin]) -> Bool {
+    public func isAllGreaterThan(coins: Coins) -> Bool {
         if isEmpty {
             return false
         }
@@ -248,7 +289,7 @@ extension Array where Element == Coin {
     //
     // CONTRACT: Add will never return Coins where one Coin has a non-positive
     // amount. In otherwords, IsValid will always return true.
-    public static func + (lhs: [Coin], rhs: [Coin]) -> [Coin] {
+    public static func + (lhs: Coins, rhs: Coins) -> Coins {
         lhs.safeAdd(other: rhs)
     }
 
@@ -257,8 +298,8 @@ extension Array where Element == Coin {
     // other set is returned. Otherwise, the coins are compared in order of their
     // denomination and addition only occurs when the denominations match, otherwise
     // the coin is simply added to the sum assuming it's not zero.
-    func safeAdd(other coinsB: [Coin]) -> [Coin] {
-        var sum: [Coin] = []
+    func safeAdd(other coinsB: Coins) -> Coins {
+        var sum: Coins = []
         var indexA = 0
         var indexB = 0
         let lenA = self.count
@@ -268,7 +309,7 @@ extension Array where Element == Coin {
             if indexA == lenA {
                 if indexB == lenB {
                     // return nil coins if both sets are empty
-                    return [Coin]()
+                    return []
                 }
 
                 // return set B (excluding zero coins) if set A is empty
@@ -315,13 +356,13 @@ extension Array where Element == Coin {
     }
     
     // removeZeroCoins removes all zero coins from the given coin set
-    func removingZeroCoins() -> [Coin] {
+    func removingZeroCoins() -> Coins {
         return self.filter({ !$0.isZero })
     }
 
     // DenomsSubsetOf returns true if receiver's denom set
     // is subset of coinsB's denoms.
-    func denominationIsSubset(of coins: [Coin]) -> Bool {
+    func denominationIsSubset(of coins: Coins) -> Bool {
         // more denoms in B than in receiver
         if count > coins.count {
             return false
@@ -338,7 +379,7 @@ extension Array where Element == Coin {
      
     // Returns the amount of a denom from coins
     public func amountOf(denomination: String) -> UInt {
-        Cosmos.mustValidate(denomination: denomination)
+        Coins.mustValidate(denomination: denomination)
 
         switch count {
         case 0:
@@ -370,14 +411,16 @@ extension Array where Element == Coin {
 
 let denominationRegex = "[a-z][a-z0-9]{2,15}"
 
-// ValidateDenom validates a denomination string returning an error if it is
-// invalid.
-public func validate(denomination: String) throws {
-    if denomination.range(of: denominationRegex, options: .regularExpression) == nil {
-        throw Cosmos.Error.invalidDenomination(denomination: denomination)
+extension Coins {
+    // ValidateDenom validates a denomination string returning an error if it is
+    // invalid.
+    public static func validate(denomination: String) throws {
+        if denomination.range(of: denominationRegex, options: .regularExpression) == nil {
+            throw Cosmos.Error.invalidDenomination(denomination: denomination)
+        }
     }
-}
 
-func mustValidate(denomination: String) {
-    try! validate(denomination: denomination)
+    static func mustValidate(denomination: String) {
+        try! validate(denomination: denomination)
+    }
 }

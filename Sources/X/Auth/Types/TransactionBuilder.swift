@@ -4,7 +4,7 @@ import Cosmos
 
 
 public enum FeeStructure {
-    case fees([Coin])
+    case fees(Coins)
     case gasPrice([DecimalCoin])
 }
 
@@ -48,7 +48,7 @@ public struct TransactionBuilder<Tx: Transaction> {
     }
     
     func buildSignMessage(messages: [Message]) throws -> StandardSignedMessage {
-        let finalFees: [Coin]
+        let finalFees: Coins
         let limit: UInt64
         switch gas {
         case .auto:

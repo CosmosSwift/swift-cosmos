@@ -7,10 +7,10 @@ extension CosmosError {
     
     // errInternal should never be exposed, but we reserve this code for non-specified errors
     //nolint
-    static let `internal` = Self.register(codespace: Self.undefinedCodespace, code: 1, description: "internal")
+    public static let `internal` = Self.register(codespace: Self.undefinedCodespace, code: 1, description: "internal")
     
     // ErrUnknownRequest to doc
-    static let unknownRequest = Self.register(codespace: Self.rootCodespace, code: 6, description: "unknown request")
+    public static let unknownRequest = Self.register(codespace: Self.rootCodespace, code: 6, description: "unknown request")
     
     // ErrInvalidAddress to doc
     public static let invalidAddress = Self.register(codespace: Self.rootCodespace, code: 7, description: "invalid address")
@@ -19,11 +19,11 @@ extension CosmosError {
     public static let invalidCoins = Self.register(codespace: Self.rootCodespace, code: 10, description: "invalid coins")
 
     // ErrOutOfGas to doc
-    static let outOfGas = Self.register(codespace: Self.rootCodespace, code: 11, description: "out of gas")
+    public static let outOfGas = Self.register(codespace: Self.rootCodespace, code: 11, description: "out of gas")
     
     // ErrInvalidRequest defines an ABCI typed error where the request contains
     // invalid data.
-    static let invalidRequest = Self.register(codespace: Self.rootCodespace, code: 18, description: "invalid request")
+    public static let invalidRequest = Self.register(codespace: Self.rootCodespace, code: 18, description: "invalid request")
 
     // ErrPanic is only set when we recover from a panic, so we know to
     // redact potentially sensitive system info
