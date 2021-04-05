@@ -14,6 +14,14 @@ public struct StandardTransaction: Transaction {
     public let signatures: [StandardSignature]
     public let memo: String
     
+    
+    private enum CodingKeys: String, CodingKey {
+        case messages
+        case fee
+        case signatures
+        case memo
+    }
+    
     public init(messages: [Message], fee: StandardFee, signatures: [StandardSignature], memo: String) {
         self.messages = messages
         self.fee = fee
@@ -21,20 +29,37 @@ public struct StandardTransaction: Transaction {
         self.memo = memo
     }
     
+    public var gas: UInt64 { self.fee.gas }
     
     public var encoded: Data? {
+        
+        //return try? codec.marshalBinaryLengthPrefixed(data: try? JSONEncoder().encode(self))
+        #warning("This should be marchalled as binary and not json")
         return try? JSONEncoder().encode(self)
     }
 
     // TODO: Find a way to implement Codable for protocols, maybe make StandardTransaction generic?
     public init(from decoder: Decoder) throws {
-        fatalError()
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.fee = try container.decode(StandardFee.self, forKey: .fee)
+        
+        let messagesCodable = try container.decode([AnyProtocolCodable].self, forKey: .messages)
+        
+        let messages = messagesCodable.compactMap { $0.value as? Message }
+        
+        self.messages = messages
+        self.signatures = try container.decode([StandardSignature].self, forKey: .signatures)
+        self.memo = try container.decode(String.self, forKey: .memo)
     }
     
     public func encode(to encoder: Encoder) throws {
-        fatalError()
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(fee, forKey: .fee)
+        let mgs = messages.map { AnyProtocolCodable($0)}
+        try container.encode(mgs, forKey: .messages)
+        try container.encode(signatures, forKey: .signatures)
+        try container.encode(memo, forKey: .memo)
     }
-
     // ValidateBasic does a simple and lightweight validation check that doesn't
     // require access to any other information.
     public func validateBasic() throws {
@@ -77,10 +102,19 @@ public struct StandardTransaction: Transaction {
 
 //__________________________________________________________
 
-
-
-func standardSignBytes(chainID: String, accountNumber: UInt64, sequence: UInt64, fee: StandardFee, messages: [Message], memo: String) -> Data {
-    fatalError()
+func standardSignBytes(chainID: String, accountNumber: UInt64, sequence: UInt64, fee: StandardFee, messages: [Message], memo: String) throws -> Data {
+    
+    var messagesBytes: [Data] = []
+    for message in messages {
+        #warning("This needs to be properly checked")
+        messagesBytes.append(message.toSign)
+    }
+    
+    let sigDoc = StandardSignatureDoc(accountNumber: accountNumber, chainID: chainID, fee: fee, memo: memo, messages: messagesBytes, sequence: sequence)
+    
+    return try JSONEncoder().encode(sigDoc)
+    
+    
 //    // StdSignBytes returns the bytes to sign for a transaction.
 //    func StdSignBytes(chainID string, accnum uint64, sequence uint64, fee StdFee, msgs []sdk.Msg, memo string) []byte {
 //        msgsBytes := make([]json.RawMessage, 0, len(msgs))
@@ -114,10 +148,28 @@ extension Auth {
             // StdTx.Msg is an interface. The concrete types
             // are registered by MakeTxCodec
             do {
+                print(transactionData.hex)
                 let transaction: StandardTransaction = try codec.unmarshalBinaryLengthPrefixed(data: transactionData)
                 return transaction
             } catch {
                 throw Cosmos.Error.transactionDecode(reason: "\(error)")
+            }
+        }
+    }
+    
+    public static func defaultTransactionEncoder(codec: Codec) -> TransactionEncoder {
+        return { transaction in
+            #warning("Do we need to handle more than StandardTransaction?")
+            do {
+                let encoded = try codec.marshalBinaryLengthPrefixed(value: transaction as! StandardTransaction)
+                let tx: StandardTransaction = try codec.unmarshalBinaryLengthPrefixed(data: encoded)
+                print (tx)
+                print(encoded.hex)
+                print(encoded.count)
+                return encoded
+                
+            } catch {
+                throw Cosmos.Error.transactionEncode(reason: "\(error)")
             }
         }
     }

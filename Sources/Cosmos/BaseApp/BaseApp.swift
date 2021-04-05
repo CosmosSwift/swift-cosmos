@@ -451,6 +451,11 @@ open class BaseApp: Sealable {
         var request = contextForTransaction(mode: mode, transactionData: transactionData)
         let multiStore = request.multiStore
         
+        #warning("This is a temporary hack")
+        if mode == .check || mode == .recheck {
+            request.blockGasMeter = InfiniteGasMeter()
+        }
+        
         guard var blockGasMeter = request.blockGasMeter else {
             fatalError("blockGasMeter should be set by now.")
         }

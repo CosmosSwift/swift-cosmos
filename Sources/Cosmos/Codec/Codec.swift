@@ -30,8 +30,15 @@ public class Codec {
     // before encoding.  MarshalBinaryLengthPrefixed will panic if o is a nil-pointer,
     // or if o is invalid.
     public func marshalBinaryLengthPrefixed<T: Encodable>(value: T) throws -> Data {
+        
         let data = try marshalBinaryBare(value: value)
-        return Data(data.count.words.map(UInt8.init)) + data
+        
+        let size = Data(varintEncode(data.count))
+        print(value)
+        print(data.count)
+        print(size.hex)
+        print(data.hex)
+        return size + data
     }
 
     public func mustMarshalBinaryLengthPrefixed<T: Encodable>(value: T) -> Data {
@@ -42,7 +49,10 @@ public class Codec {
     // MarshalBinaryBare doesn't prefix the byte-length of the encoding,
     // so the caller must handle framing.
     public func marshalBinaryBare<T: Encodable>(value: T) throws -> Data {
-        try encoder.encode(value)
+        let encoded = try encoder.encode(value)
+        print(String(data: encoded, encoding: .utf8))
+        return encoded
+
 //        // Dereference value if pointer.
 //        var rv, _, isNilPtr = derefPointers(reflect.ValueOf(o))
 //        if isNilPtr {
@@ -116,7 +126,8 @@ public class Codec {
     
     // UnmarshalBinaryBare will panic if ptr is a nil-pointer.
     public func unmarshalBinaryBare<T: Decodable>(data: Data) throws -> T {
-        try decoder.decode(T.self, from: data)
+        print(T.self)
+        return try decoder.decode(T.self, from: data)
     }
     
     public func mustUnmarshalBinaryBare<T: Decodable>(data: Data) -> T {
@@ -176,4 +187,29 @@ extension Data {
         
         return (0, 0)
     }
+}
+
+
+internal func varintEncode<T: FixedWidthInteger>(_ n: T) -> [UInt8] {
+    var u = UInt64(n)
+    var a = [UInt8]()
+    while (u != 0) {
+        a.append(UInt8(u % 128))
+        u = u >> 7
+    }
+    if (a.count == 0) { a.append(0x0) }
+    for i in 0..<a.count - 1 {
+        a[i] = a[i] ^ (1 << 7)
+    }
+    return a
+}
+
+// VarintDecode
+internal func varintDecode(_ array: [UInt8]) -> UInt64 {
+    assert(array.count < 11)
+    var res: UInt64 = 0
+    for i in 0..<array.count {
+        res = res << 7  + UInt64(array[array.count-i-1] & 127)
+    }
+    return res
 }

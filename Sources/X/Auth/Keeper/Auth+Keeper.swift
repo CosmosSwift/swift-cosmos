@@ -10,7 +10,7 @@ public struct AccountKeeper {
     let key: StoreKey
 
     // The prototypical Account constructor.
-    let proto: () -> Account
+    let proto: () -> AccountProtocol
 
     // The codec codec for binary encoding/decoding of accounts.
     let codec: Codec
@@ -24,7 +24,7 @@ public struct AccountKeeper {
         codec: Codec,
         key: StoreKey,
         paramstore: Subspace,
-        proto: @escaping () -> Account
+        proto: @escaping () -> AccountProtocol
     ) {
         self.key = key
         self.proto = proto
@@ -61,8 +61,8 @@ extension AccountKeeper {
 // Misc.
 
 extension AccountKeeper {
-    func decodeAccount(data: Data) -> Account {
+    func decodeAccount(data: Data) -> AccountProtocol {
         let account: AnyProtocolCodable = try! codec.unmarshalBinaryBare(data: data)
-        return account.value as! Account
+        return account.value as! AccountProtocol
     }
 }

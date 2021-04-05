@@ -9,19 +9,19 @@ public enum FeeStructure {
 }
 
 public struct TransactionBuilder<Tx: Transaction> {
-    //var transactionEncoder: (_ transaction: Tx) throws -> Data
-    var keybase: Keybase?
-    var accountNumber: UInt64
-    var sequence: UInt64
-    var gas: Flags.TransactionFlags.GasLimitPerTransaction
+    public let transactionEncoder: TransactionEncoder
+    public var keybase: Keybase?
+    public let accountNumber: UInt64
+    public let sequence: UInt64
+    public let gas: Flags.TransactionFlags.GasLimitPerTransaction
     let gasAdjustment: Double
     let simulateAndExecute: Bool
-    var chainID: String
-    var memo: String
-    var feeStructure: FeeStructure
+    public let chainID: String
+    public let memo: String
+    public let feeStructure: FeeStructure
     
     public init(
-        //transactionEncoder: @escaping (_ transaction: Tx) throws -> Data,
+        transactionEncoder: @escaping TransactionEncoder,
         accountNumber: UInt64,
         sequence: UInt64,
         gas: Flags.TransactionFlags.GasLimitPerTransaction,
@@ -35,7 +35,7 @@ public struct TransactionBuilder<Tx: Transaction> {
             throw TransactionBuilderError.chainIDRequired
         }
         
-        //self.transactionEncoder = transactionEncoder
+        self.transactionEncoder = transactionEncoder
         self.keybase = nil
         self.accountNumber = accountNumber
         self.sequence = sequence
@@ -91,10 +91,12 @@ public struct TransactionBuilder<Tx: Transaction> {
     func sign(name: String, passPhrase: String, message: StandardSignedMessage) throws -> Data {
         let signature = try TransactionBuilder.makeSignature(keybase: keybase, name: name, passPhrase: passPhrase, message: message)
         let transaction = Tx(messages: message.messages, fee: message.fee, signatures: [signature], memo: message.memo)
-        guard let encoded = transaction.encoded else {
-            throw CosmosError.init(codespace: "TransactionBuilder", code: 1, description: "Can't encode transaction")
-        }
-        return encoded
+        
+        
+//        guard let encoded = transaction.encoded else {
+//            throw CosmosError.init(codespace: "TransactionBuilder", code: 1, description: "Can't encode transaction")
+//        }
+        return try transactionEncoder(transaction)
     }
     
     struct KeyringServiceName {
@@ -109,12 +111,13 @@ public struct TransactionBuilder<Tx: Transaction> {
     // MakeSignature builds a StdSignature given keybase, key name, passphrase, and a StdSignMsg.
     static func makeSignature(keybase: Keybase?, name: String, passPhrase: String, message: StandardSignedMessage) throws -> StandardSignature {
         let keybase = keybase ?? newKeyring(KeyringServiceName(), keyringBackend: "", homeFlag: "")
-        return StandardSignature(signature: try keybase.sign(name: name, passphrase: passPhrase, message: message.data).0)
+        let keyInfo = try keybase.get(name: name)
+        return StandardSignature(publicKey: keyInfo.publicKey, signature: try keybase.sign(name: name, passphrase: passPhrase, message: message.data).0)
     }
     
     // BuildAndSign builds a single message to be signed, and signs a transaction
     // with the built message given a name, passphrase, and a set of messages.
-    func buildAndSign(name: String, passPhrase: String, messages: [Message]) throws -> Data {
+    public func buildAndSign(name: String, passPhrase: String, messages: [Message]) throws -> Data {
         let message = try buildSignMessage(messages: messages)
         return try sign(name: name, passPhrase: passPhrase, message: message)
     }
@@ -124,21 +127,21 @@ public struct TransactionBuilder<Tx: Transaction> {
     func buildTransactionForSimulation(messages: [Message]) throws -> Data {
         let signedMessage = try buildSignMessage(messages: messages)
         
-        fatalError("This is not correct yet")
-        //let signatures = [StandardSig]
+        // the ante handler will populate with a sentinel pubkey
+        let signatures: [StandardSignature] = []
         
         let transaction =
             Tx(
                 messages: signedMessage.messages,
                 fee: signedMessage.fee,
-                signatures: [], // this probably shouldn't be empty
+                signatures: signatures,
                 memo: signedMessage.memo
             )
         
-        guard let encoded = transaction.encoded else {
-            throw CosmosError.init(codespace: "TransactionBuilder", code: 1, description: "Can't encode transaction")
-        }
-        return encoded
+//        guard let encoded = transaction.encoded else {
+//            throw CosmosError.init(codespace: "TransactionBuilder", code: 1, description: "Can't encode transaction")
+//        }
+        return try transactionEncoder(transaction)
         
 //        func (bldr TxBuilder) BuildTxForSim(msgs []sdk.Msg) ([]byte, error) {
 //            signMsg, err := bldr.BuildSignMsg(msgs)

@@ -84,10 +84,12 @@ public enum AttributeValue {}
 
     // StringAttribute defines en Event object wrapper where all the attributes
     // contain key/value pairs that are strings instead of raw bytes.
-struct StringEvent: Codable {
+struct StringEvent {
     let type: String
     let attributes: [Attribute]
 }
+
+extension StringEvent: Codable {}
 
     // StringAttributes defines a slice of StringEvents objects.
 typealias StringEvents = [StringEvent]
@@ -139,8 +141,7 @@ extension StringEvents {
 extension Event {
     // StringifyEvent converts an Event object to a StringEvent object.
     func stringify() -> StringEvent {
-        // TODO: Implement
-        fatalError()
+        StringEvent(type: self.type, attributes: self.attributes.map {Attribute(key: String(data: $0.key, encoding: .utf8) ?? "", value: String(data: $0.value, encoding: .utf8) ?? "")})
 //        res := StringEvent{Type: e.Type}
 //
 //        for _, attr := range e.Attributes {
@@ -158,8 +159,7 @@ extension Events {
     // StringifyEvents converts a slice of Event objects into a slice of StringEvent
     // objects.
     func stringify() -> StringEvents {
-        // TODO: Implement
-        fatalError()
+        self.map { $0.stringify()}
 //        res := make(StringEvents, 0, len(events))
 //
 //        for _, e := range events {

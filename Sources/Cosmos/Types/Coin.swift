@@ -98,6 +98,23 @@ extension Coin: CustomStringConvertible {
 // Adds amounts of two coins with same denom. If the coins differ in denom then
 // it panics.
 extension Coin {
+    #warning("operations should not lead to fatalError()")
+    public static func - (lhs: Coin, rhs: Coin) -> Coin {
+        if lhs.denomination != rhs.denomination {
+            fatalError("invalid coin denominations; \(lhs.denomination), \(rhs.denomination)")
+        }
+        
+        if lhs.amount < rhs.amount {
+            fatalError("coins substraction leading to negative amount ; \(lhs.amount) < \(rhs.amount)")
+        }
+        
+        return Coin(
+            denomination: lhs.denomination,
+            amount: lhs.amount - rhs.amount
+        )
+    }
+
+    #warning("operations should not lead to fatalError()")
     public static func + (lhs: Coin, rhs: Coin) -> Coin {
         if lhs.denomination != rhs.denomination {
             fatalError("invalid coin denominations; \(lhs.denomination), \(rhs.denomination)")
@@ -289,71 +306,32 @@ extension Array where Element == Coin {
     //
     // CONTRACT: Add will never return Coins where one Coin has a non-positive
     // amount. In otherwords, IsValid will always return true.
-    public static func + (lhs: Coins, rhs: Coins) -> Coins {
-        lhs.safeAdd(other: rhs)
+    public static func +(lhs: Coins, rhs: Coins) -> Coins {
+        var dict = lhs.reduce(into: [String:UInt](), { $0[$1.denomination] = $1.amount } )
+        
+        for coin in rhs {
+            dict[coin.denomination, default: 0] += coin.amount
+        }
+        
+        return dict.keys.map { Coin(denomination: $0, amount: dict[$0]!) }
     }
-
-    // safeAdd will perform addition of two coins sets. If both coin sets are
-    // empty, then an empty set is returned. If only a single set is empty, the
-    // other set is returned. Otherwise, the coins are compared in order of their
-    // denomination and addition only occurs when the denominations match, otherwise
-    // the coin is simply added to the sum assuming it's not zero.
-    func safeAdd(other coinsB: Coins) -> Coins {
-        var sum: Coins = []
-        var indexA = 0
-        var indexB = 0
-        let lenA = self.count
-        let lenB = coinsB.count
-
-        while true {
-            if indexA == lenA {
-                if indexB == lenB {
-                    // return nil coins if both sets are empty
-                    return []
-                }
-
-                // return set B (excluding zero coins) if set A is empty
-                
-                return sum + (Array(coinsB.suffix(from: indexB)).removingZeroCoins())
-            } else if indexB == lenB {
-                // return set A (excluding zero coins) if set B is empty
-                return sum + (Array(self.suffix(from: indexA)).removingZeroCoins())
-            }
-
-            let coinA = self[indexA]
-            let coinB = coinsB[indexB]
-
-            let result = coinA.denomination.compare(coinB.denomination)
-
-            switch result {
-            // coin A denom < coin B denom
-            case .orderedAscending:
-                if !coinA.isZero {
-                    sum.append(coinA)
-                }
-
-                indexA += 1
-            // coin A denom == coin B denom
-            case .orderedSame:
-                let result = coinA + coinB
-                
-                if result.isZero {
-                    sum.append(result)
-                }
-
-                indexA += 1
-                indexB += 1
-                
-            // coin A denom > coin B denom
-            case .orderedDescending:
-                if !coinB.isZero {
-                    sum.append(coinB)
-                }
-
-                indexB += 1
+        
+    public static func substract(from lhs: Coins, this rhs: Coins) throws -> Coins {
+        
+        var dict = lhs.reduce(into: [String:UInt](), { $0[$1.denomination] = $1.amount } )
+        
+        for coin in rhs {
+            let diff = dict[coin.denomination, default: 0] - coin.amount
+            if diff < 0 {
+                throw CosmosError.errInvalidCoins
+            } else {
+                dict[coin.denomination] = diff
             }
         }
+        
+        return dict.keys.map { Coin(denomination: $0, amount: dict[$0]!) }
     }
+
     
     // removeZeroCoins removes all zero coins from the given coin set
     func removingZeroCoins() -> Coins {
@@ -379,7 +357,7 @@ extension Array where Element == Coin {
      
     // Returns the amount of a denom from coins
     public func amountOf(denomination: String) -> UInt {
-        Coins.mustValidate(denomination: denomination)
+    Coins.mustValidate(denomination: denomination)
 
         switch count {
         case 0:

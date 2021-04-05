@@ -1,4 +1,13 @@
 import Cosmos
+import Auth
+
+protocol TransactionWithGas {
+    var gas: UInt64 { get }
+}
+
+
+extension StandardTransaction: TransactionWithGas {}
+
 
 // SetUpContextDecorator sets the GasMeter in the Context and wraps the next AnteHandler with a defer clause
 // to recover from any downstream OutOfGas panics in the AnteHandler chain to return an error with information
@@ -13,8 +22,12 @@ struct SetUpContextDecorator: AnteDecorator {
         next: AnteHandler?
     ) throws -> Request {
         // TODO: Implement
-        fatalError()
-//        // all transactions must implement GasTx gasTx, ok := tx.(GasTx)
+        
+        guard let transaction = transaction as? TransactionWithGas else {
+            throw CosmosError.wrap(error: CosmosError.invalidTransaction, description: "Tx must be a GasTx")        }
+        
+//        // all transactions must implement GasTx
+//        gasTx, ok := tx.(GasTx)
 //        if !ok {
 //            // Set a gas meter with limit 0 as to prevent an infinite gas meter attack
 //            // during runTx.
@@ -22,8 +35,9 @@ struct SetUpContextDecorator: AnteDecorator {
 //            return newCtx, sdkerrors.Wrap(sdkerrors.ErrTxDecode, "Tx must be GasTx")
 //        }
 //
-//        newCtx = SetGasMeter(simulate, ctx, gasTx.GetGas())
-//
+
+        let request = setGasMeter(simulate, request, transaction.gas)
+        
 //        // Decorator will catch an OutOfGasPanic caused in the next antehandler
 //        // AnteHandlers must have their own defer/recover in order for the BaseApp
 //        // to know how much gas was used! This is because the GasMeter is created in
@@ -45,16 +59,24 @@ struct SetUpContextDecorator: AnteDecorator {
 //        }()
 //
 //        return next(newCtx, tx, simulate)
+        if let next = next {
+            return (try? next(request, transaction as! Transaction, simulate)) ?? request
+        } else {
+            return request
+        }
     }
     
-//    // SetGasMeter returns a new context with a gas meter set from a given context.
-//    func SetGasMeter(simulate bool, ctx sdk.Context, gasLimit uint64) sdk.Context {
-//        // In various cases such as simulation and during the genesis block, we do not
-//        // meter any gas utilization.
-//        if simulate || ctx.BlockHeight() == 0 {
-//            return ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-//        }
-//
-//        return ctx.WithGasMeter(sdk.NewGasMeter(gasLimit))
-//    }
+    // SetGasMeter returns a new context with a gas meter set from a given context.
+    func setGasMeter(_ simulate: Bool, _ request: Request, _ gasLimit: UInt64) -> Request {
+        // In various cases such as simulation and during the genesis block, we do not
+        // meter any gas utilization.
+        #warning("In the go code, a copy of the context is made")
+        if simulate || request.header.height == 0 {
+            
+            request.gasMeter = InfiniteGasMeter()
+        } else {
+            request.gasMeter = BasicGasMeter(limit: gasLimit)
+        }
+        return request
+    }
 }

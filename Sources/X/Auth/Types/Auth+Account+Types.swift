@@ -6,7 +6,7 @@ import Cosmos
 // This can be extended by embedding within in your AppAccount.
 // However one doesn't have to use BaseAccount as long as your struct
 // implements Account.
-public struct BaseAccount: Account, GenesisAccount {
+public struct BaseAccount: AccountProtocol, GenesisAccount {
     public static let metaType: MetaType = Self.metaType(
         key: "cosmos-sdk/Account"
     )
@@ -42,16 +42,8 @@ public struct BaseAccount: Account, GenesisAccount {
         self.address = try container.decode(AccountAddress.self, forKey: .address)
         self.coins = try container.decode(Coins.self, forKey: .coins)
         let publicKeyCodable = try container.decodeIfPresent(AnyProtocolCodable.self, forKey: .publicKey)
-       
-        guard let publicKey = publicKeyCodable?.value as? PublicKeyProtocol else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .publicKey,
-                in: container,
-                debugDescription: "Invalid public key type"
-            )
-        }
         
-        self.publicKey = publicKey
+        self.publicKey = publicKeyCodable?.value as? PublicKeyProtocol
         
         let accountNumberStr = try container.decode(String.self, forKey: .accountNumber)
         
@@ -184,7 +176,7 @@ public struct BaseAccount: Account, GenesisAccount {
 }
 
 // ProtoBaseAccount - a prototype function for BaseAccount
-public func protoBaseAccount() -> Account {
+public func protoBaseAccount() -> AccountProtocol {
     fatalError()
     // TODO: BaseAccount is returned here with no parameters in the original codebase
     // Check what exactly that would mean

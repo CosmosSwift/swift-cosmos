@@ -27,7 +27,10 @@ extension CosmosError {
 
     // ErrPanic is only set when we recover from a panic, so we know to
     // redact potentially sensitive system info
-    static let panic = Self.register(codespace: Self.undefinedCodespace, code: 111222, description: "panic")
+    static let panic = register(codespace: Self.undefinedCodespace, code: 111222, description: "panic")
+    
+    // Invalid transaction
+    public static let invalidTransaction = register(codespace: Self.rootCodespace, code: 1111, description: "invalid transaction type")
 }
 
 public struct CosmosError: Swift.Error, Equatable {

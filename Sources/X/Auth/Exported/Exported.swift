@@ -8,7 +8,7 @@ import Cosmos
 // and a pubkey for authentication purposes.
 //
 // Many complex conditions can be used in the concrete struct which implements Account.
-public protocol Account: ProtocolCodable, CustomStringConvertible {
+public protocol AccountProtocol: ProtocolCodable, CustomStringConvertible {
     var address: AccountAddress { get }
     // errors if already set.
     mutating func set(address: AccountAddress) throws
@@ -33,7 +33,7 @@ public protocol Account: ProtocolCodable, CustomStringConvertible {
 
 // ModuleAccountI defines an account interface for modules that hold tokens in
 // an escrow.
-public protocol ModuleAccount: Account {
+public protocol ModuleAccount: AccountProtocol {
     var name: String { get }
     var permissions: [String] { get }
     func has(permission: String) -> Bool
@@ -57,7 +57,7 @@ extension GenesisAccounts {
 }
 
 // GenesisAccount defines a genesis account that embeds an Account with validation capabilities.
-public protocol GenesisAccount: Account {
+public protocol GenesisAccount: AccountProtocol {
     func validate() throws
 }
 

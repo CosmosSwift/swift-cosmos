@@ -17,14 +17,14 @@ extension AccountKeeper {
     }
     
     // NewAccount sets the next account number to a given account interface
-    public func makeAccount(request: Request, account: Account) -> Account {
+    public func makeAccount(request: Request, account: AccountProtocol) -> AccountProtocol {
         var account = account
         try! account.set(accountNumber: nextAccountNumber(request: request))
         return account
     }
 
     // GetAccount implements sdk.AccountKeeper.
-    public func account(request: Request, address: AccountAddress) -> Account? {
+    public func account(request: Request, address: AccountAddress) -> AccountProtocol? {
         let store = request.keyValueStore(key: key)
 
         guard let data = store.get(key: addressStoreKey(address: address)) else {
@@ -35,13 +35,13 @@ extension AccountKeeper {
     }
 
     // GetAllAccounts returns all accounts in the accountKeeper.
-    public func allAccounts(request: Request) -> [Account] {
+    public func allAccounts(request: Request) -> [AccountProtocol] {
         // TODO: Implement
         fatalError()
     }
     
     // SetAccount implements sdk.AccountKeeper.
-    public func setAccount<A: Account>(request: Request, account: A) {
+    public func setAccount<A: AccountProtocol>(request: Request, account: A) {
         let address = account.address
         let store = request.keyValueStore(key: key)
         let data = try! codec.marshalBinaryBare(value: AnyProtocolCodable(account))
@@ -53,7 +53,7 @@ extension AccountKeeper {
     }
     
     // IterateAccounts iterates over all the stored accounts and performs a callback function
-    public func iterateAccounts(request: Request, process: (Account) -> Bool) {
+    public func iterateAccounts(request: Request, process: (AccountProtocol) -> Bool) {
         let store = request.keyValueStore(key: key)
         var iterator = store.iterator(start: Data(), end: Data())
         
