@@ -224,7 +224,7 @@ public struct QueryTransaction: ParsableCommand {
     
     public mutating func run() throws {
         let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
-        let client = RESTClient(url: "http://192.168.64.1:26657", httpClient: httpClient)
+        let client = RESTClient(url: queryFlags.node.description, httpClient: httpClient)
         
         let output = try client.transaction(params: .init(hash: txHash.data, prove: true))
             .flatMapResult { wrappedTxResponse in

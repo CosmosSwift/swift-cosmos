@@ -70,7 +70,7 @@ public struct BlockCommand: ParsableCommand {
     
     public mutating func run() throws {
         let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
-        let client = RESTClient(url: "http://192.168.64.1:26657", httpClient: httpClient)
+        let client = RESTClient(url: node.description, httpClient: httpClient)
         
         
         let blockResponse = try client.block(params: .init(height: height))
