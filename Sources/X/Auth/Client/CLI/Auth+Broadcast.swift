@@ -54,7 +54,7 @@ public struct GetBroadcast: ParsableCommand {
             params: .init(transaction: standardTransaction.encoded!)
         ).flatMapResult { wrappedBroadcastTransactionResponse in
             wrappedBroadcastTransactionResponse.result
-        }
+        }.wait()
         
         //return clientCtx.PrintProto(res)
         print(response)
