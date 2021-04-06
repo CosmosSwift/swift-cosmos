@@ -20,13 +20,13 @@ let package = Package(
         .library(name: "Simulation", targets: ["Simulation"]),
         .library(name: "Staking", targets: ["Staking"]),
         .library(name: "Supply", targets: ["Supply"]),
-        
+
         .library(name: "AuthAnte", targets: ["AuthAnte"]),
         .library(name: "JSON", targets: ["JSON"]),
     ],
     dependencies: [
-        .package(name: "ABCI", url: "https://github.com/CosmosSwift/swift-abci", .upToNextMajor(from: "0.50.0")),
-        .package(name: "Tendermint", url: "https://github.com/CosmosSwift/swift-tendermint", .branch("feature/ibc")),
+        .package(name: "ABCI", url: "https://github.com/CosmosSwift/swift-abci", .branch("main")),
+        .package(name: "Tendermint", url: "https://github.com/CosmosSwift/swift-tendermint", .branch("main")),
         .package(name: "iAVLPlus", url: "https://github.com/CosmosSwift/swift-iavlplus", .branch("master")),
         .package(name: "swift-log", url: "https://github.com/apple/swift-log.git", .upToNextMajor(from: "1.0.0")),
         .package(name: "swift-crypto", url: "https://github.com/apple/swift-crypto.git", .upToNextMajor(from: "1.0.0")),
