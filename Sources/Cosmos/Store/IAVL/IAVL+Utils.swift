@@ -1,12 +1,7 @@
-import CryptoKit
 import Foundation
 import iAVLPlusCore
 import Merkle
-
-
-
-
-
+import CryptoSwift
 
 extension Data: InitialisableProtocol {}
 
@@ -17,8 +12,8 @@ public struct TestHasher: HasherProtocol {
 
     static var size: Int = 32
 
-    public static func hash<Data>(_ value: Data) -> Hash where Data: DataProtocol {
-        return SHA256.hash(data: value).withUnsafeBytes { Hash($0) }
+    public static func hash<DataType>(_ value: DataType) -> Hash where DataType: DataProtocol {
+        return Data(value).sha256().withUnsafeBytes { Hash($0) }
     }
 
     public var hash: Hash {
