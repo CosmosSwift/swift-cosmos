@@ -15,7 +15,7 @@ import Tendermint
 // defined.
 
 extension RESTClient {
-    public func broadcastTransaction(params: RESTBroadcastTransactionParameters, mode: Flags.TransactionFlags.BroadcastMode = .block) throws -> EventLoopFuture<RESTResponse<TransactionResponse>> {
+    public func broadcastTransaction(params: RESTBroadcastTransactionParameters, mode: Flags.TransactionFlags.BroadcastMode = .block) -> EventLoopFuture<RESTResponse<TransactionResponse>> {
         switch mode {
         case .sync:
             // BroadcastTxSync broadcasts transaction bytes to a Tendermint node
@@ -26,7 +26,7 @@ extension RESTClient {
                     return response.map { _ in checked }
                 }
                 return response.map { TransactionResponse($0) }
-                }
+            }
         case .async:
             // BroadcastTxAsync broadcasts transaction bytes to a Tendermint node
             // asynchronously (i.e. returns immediately).
@@ -36,7 +36,7 @@ extension RESTClient {
                     return response.map { _ in checked }
                 }
                 return response.map { TransactionResponse($0) }
-                }
+            }
         case .block:
             // BroadcastTxCommit broadcasts transaction bytes to a Tendermint node and
             // waits for a commit. An error is only returned if there is no RPC node
@@ -53,7 +53,7 @@ extension RESTClient {
                     return response.map { _ in checked }
                 }
                 return response.map { TransactionResponse($0) }
-                }
+            }
         }
     }
 }
