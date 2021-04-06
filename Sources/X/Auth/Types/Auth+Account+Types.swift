@@ -6,13 +6,13 @@ import Cosmos
 // This can be extended by embedding within in your AppAccount.
 // However one doesn't have to use BaseAccount as long as your struct
 // implements Account.
-public struct BaseAccount: Account, GenesisAccount {
+public struct BaseAccount: AccountProtocol, GenesisAccount {
     public static let metaType: MetaType = Self.metaType(
         key: "cosmos-sdk/Account"
     )
     
     public private(set) var address: AccountAddress
-    public private(set) var coins: [Coin]
+    public private(set) var coins: Coins
     public private(set) var publicKey: PublicKeyProtocol?
     public private(set) var accountNumber: UInt64
     public private(set) var sequence: UInt64
@@ -20,7 +20,7 @@ public struct BaseAccount: Account, GenesisAccount {
     // NewBaseAccount creates a new BaseAccount object
     public init(
         address: AccountAddress,
-        coins: [Coin] = [],
+        coins: Coins = [],
         publicKey: PublicKeyProtocol? = nil,
         accountNumber: UInt64 = 0,
         sequence: UInt64 = 0
@@ -40,18 +40,10 @@ public struct BaseAccount: Account, GenesisAccount {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.address = try container.decode(AccountAddress.self, forKey: .address)
-        self.coins = try container.decode([Coin].self, forKey: .coins)
+        self.coins = try container.decode(Coins.self, forKey: .coins)
         let publicKeyCodable = try container.decodeIfPresent(AnyProtocolCodable.self, forKey: .publicKey)
-       
-        guard let publicKey = publicKeyCodable?.value as? PublicKeyProtocol else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .publicKey,
-                in: container,
-                debugDescription: "Invalid public key type"
-            )
-        }
         
-        self.publicKey = publicKey
+        self.publicKey = publicKeyCodable?.value as? PublicKeyProtocol
         
         let accountNumberStr = try container.decode(String.self, forKey: .accountNumber)
         
@@ -104,7 +96,7 @@ public struct BaseAccount: Account, GenesisAccount {
         self.sequence = sequence
     }
     
-    public mutating func set(coins: [Coin]) throws {
+    public mutating func set(coins: Coins) throws {
         self.coins = coins
     }
     
@@ -125,13 +117,13 @@ public struct BaseAccount: Account, GenesisAccount {
     
     // SpendableCoins returns the total set of spendable coins. For a base account,
     // this is simply the base coins.
-    public func spendableCoins(blockTime: TimeInterval) -> [Coin] {
+    public func spendableCoins(blockTime: TimeInterval) -> Coins {
         coins
     }
     
     struct BaseAccountPretty: Codable {
         let address: AccountAddress
-        let coins: [Coin]
+        let coins: Coins
         let publicKey: String
         let accountNumber: UInt64
         let sequence: UInt64
@@ -184,9 +176,11 @@ public struct BaseAccount: Account, GenesisAccount {
 }
 
 // ProtoBaseAccount - a prototype function for BaseAccount
-public func protoBaseAccount() -> Account {
+public func protoBaseAccount() -> AccountProtocol {
     fatalError()
     // TODO: BaseAccount is returned here with no parameters in the original codebase
     // Check what exactly that would mean
 //    BaseAccount()
 }
+
+

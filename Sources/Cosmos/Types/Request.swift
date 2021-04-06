@@ -9,9 +9,9 @@ public final class Request {
     public var header: Header
     let chainID: String
     var transactionData: Data = Data()
-    let logger: Logger
+    public let logger: Logger
     var voteInfo: [VoteInfo] = []
-    let gasMeter: GasMeter
+    public var gasMeter: GasMeter
     var blockGasMeter: GasMeter? = nil
     var checkTransaction: Bool
     
@@ -33,6 +33,7 @@ public final class Request {
         multiStore: MultiStore,
         header: Header,
         isCheckTransaction: Bool,
+        gasMeter: GasMeter = InfiniteGasMeter(),
         logger: Logger
     ) {
         self.multiStore = multiStore
@@ -40,11 +41,10 @@ public final class Request {
         self.chainID = header.chainID
         self.checkTransaction = isCheckTransaction
         self.logger = logger
-        self.gasMeter = InfiniteGasMeter()
+        self.gasMeter = gasMeter
         self.minGasPrices = [DecimalCoin]()
         self.eventManager = EventManager()
     }
-
 }
 
 // ----------------------------------------------------------------------------

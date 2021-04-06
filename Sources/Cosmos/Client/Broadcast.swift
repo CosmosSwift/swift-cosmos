@@ -30,7 +30,7 @@ extension RESTClient {
         case .async:
             // BroadcastTxAsync broadcasts transaction bytes to a Tendermint node
             // asynchronously (i.e. returns immediately).
-            return self.broadcastTransactionSync(params: params).map { response in
+            return self.broadcastTransactionAsync(params: params).map { response in
                 // RESTResponse<BroadcastTransactionResponse> -> RESTResponse<TransactionResponse>
                 if let checked = checkTendermintError(response.result, params.transaction) {
                     return response.map { _ in checked }
@@ -45,7 +45,7 @@ extension RESTClient {
             // NOTE: This should ideally not be used as the request may timeout but the tx
             // may still be included in a block. Use BroadcastTxAsync or BroadcastTxSync
             // instead.
-            return self.broadcastTransactionSync(params: params).map { response in
+            return self.broadcastTransactionCommit(params: params).map { response in
                 // RESTResponse<BroadcastTransactionCommitResponse> -> RESTResponse<TransactionResponse>
                 
                 

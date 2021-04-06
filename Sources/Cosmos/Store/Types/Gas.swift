@@ -33,17 +33,17 @@ public protocol GasMeter {
     var isOutOfGas: Bool { get }
 }
 
-struct BasicGasMeter: GasMeter {
-    let limit: Gas
-    var gasConsumed: Gas
+public struct BasicGasMeter: GasMeter {
+    public let limit: Gas
+    public var gasConsumed: Gas
     
     // NewGasMeter returns a reference to a new basicGasMeter.
-    init(limit: Gas) {
+    public init(limit: Gas) {
         self.limit = limit
         self.gasConsumed = 0
     }
 
-    var gasConsumedToLimit: Gas {
+    public var gasConsumedToLimit: Gas {
         if isPastLimit {
             return limit
         }
@@ -51,7 +51,7 @@ struct BasicGasMeter: GasMeter {
         return gasConsumed
     }
 
-    mutating func consumeGas(amount: Gas, descriptor: String) throws {
+    public mutating func consumeGas(amount: Gas, descriptor: String) throws {
         // TODO: Should we set the consumed field after overflow checking?
         let (consumed, overflow) = gasConsumed.addingReportingOverflow(amount)
 
@@ -66,11 +66,11 @@ struct BasicGasMeter: GasMeter {
         self.gasConsumed = consumed
     }
 
-    var isPastLimit: Bool {
+    public var isPastLimit: Bool {
         gasConsumed > limit
     }
 
-    var isOutOfGas: Bool {
+    public var isOutOfGas: Bool {
         gasConsumed >= limit
     }
 }
@@ -110,26 +110,26 @@ extension GasConfiguration {
 
 
 
-struct InfiniteGasMeter: GasMeter {
-    var consumed: Gas
+public struct InfiniteGasMeter: GasMeter {
+    public var consumed: Gas
     
-    init() {
+    public init() {
         self.consumed = 0
     }
     
-    var gasConsumed: Gas {
+    public var gasConsumed: Gas {
         consumed
     }
     
-    var gasConsumedToLimit: Gas {
+    public var gasConsumedToLimit: Gas {
         consumed
     }
 
-    var limit: Gas {
+    public var limit: Gas {
         0
     }
     
-    mutating func consumeGas(amount: Gas, descriptor: String) {
+    public mutating func consumeGas(amount: Gas, descriptor: String) {
         // TODO: Should we set the consumed field after overflow checking?
         let (consumed, overflow) = self.consumed.addingReportingOverflow(amount)
         self.consumed = consumed
@@ -139,11 +139,11 @@ struct InfiniteGasMeter: GasMeter {
         }
     }
     
-    var isPastLimit: Bool {
+    public var isPastLimit: Bool {
         false
     }
 
-    var isOutOfGas: Bool {
+    public var isOutOfGas: Bool {
         false
     }
 }
