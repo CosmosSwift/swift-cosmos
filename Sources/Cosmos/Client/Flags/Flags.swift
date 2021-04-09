@@ -44,7 +44,7 @@ public enum Flags {
         public let host: String
         public let port: Int
         
-        public init?(argument: String) {
+        public init?(argument: String = "http://localhost:26557") {
             let parts = argument.split(separator: ":")
             switch parts.count {
             case 3:
@@ -81,9 +81,8 @@ public enum Flags {
             case json
         }
         
-        #warning("the <host>:<port> format seems like it could leverage some type safety")
         @Option(help: "<host>:<port> to Tendermint RPC interface for this chain")
-        public var node: NodeURL = NodeURL(argument: "tcp://localhost:26657")!
+        public var node: NodeURL = .init()!
         
         @Option(help: "Use a specific height to query state at (this can error if the node is pruning state)")
         public var height: Int = 0
@@ -155,9 +154,8 @@ public enum Flags {
             case address(AccountAddress)
         }
         
-        #warning("the <host>:<port> format seems like it could leverage some type safety")
         @Option(help: "<host>:<port> to Tendermint RPC interface for this chain")
-        public var node: NodeURL = NodeURL(argument: "tcp://localhost:26657")!
+        public var node: NodeURL = .init()!
         
         @Option(help: "Use a specific height to query state at (this can error if the node is pruning state)")
         public var height: Int = 0

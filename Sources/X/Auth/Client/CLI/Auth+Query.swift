@@ -124,9 +124,8 @@ public struct QueryTransactionsByEvents: ParsableCommand {
             """
     )
     
-    #warning("the <host>:<port> format seems like it could leverage some type safety")
     @Option(help: "<host>:<port> to Tendermint RPC interface for this chain")
-    var node: Flags.NodeURL = Flags.NodeURL(argument: "tcp://localhost:26657")!
+    var node: Flags.NodeURL = .init()!
     
     enum KeyRingBackend: String, ExpressibleByArgument {
         case os
