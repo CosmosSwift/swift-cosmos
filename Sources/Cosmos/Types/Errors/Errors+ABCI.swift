@@ -1,4 +1,5 @@
 import ABCIMessages
+import Foundation
 
 extension CosmosError {
     // SuccessABCICode declares an ABCI response use 0 to signal that the
@@ -153,7 +154,7 @@ extension ResponseDeliverTx {
     }
 }
 
-extension ResponseQuery {
+extension ResponseQuery where Payload == Data {
     // QueryResult returns a ResponseQuery from an error. It will try to parse ABCI
     // info from the error.
     init(error: Swift.Error) {
