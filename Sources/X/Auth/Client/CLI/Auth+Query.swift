@@ -95,10 +95,12 @@ public struct GetAccount: ParsableCommand {
         // TODO: map url to the proper value
         let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
         let client = RESTClient(url: queryFlags.node.description, httpClient: httpClient)
+        
+        #warning("These shouldn't be hardcoded?")
         let height: Int64 = 4
         let prove = false
         
-        let params = RESTABCIQueryParameters(path: "custom/acc/account", data: GetAccountPayload(Address: self.address), height: height, prove: prove)
+        let params: RequestQuery = .init(path: "custom/acc/account", data: GetAccountPayload(Address: self.address), height: height, prove: prove)
         
         let response: RESTResponse<ABCIQueryResponse<AnyProtocolCodable>> = try client.abciQueryMapToData(parameters: params).wait()
                 

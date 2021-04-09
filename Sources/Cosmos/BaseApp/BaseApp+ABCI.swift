@@ -450,7 +450,7 @@ extension BaseApp: ABCIApplication {
             height = request.height
         }
         
-        let request = RequestQuery<Data>(data: request.data, path: path, height: height, prove: request.prove)
+        let request = RequestQuery<Data>(path: path, data: request.data, height: height, prove: request.prove)
         
         if request.height <= 1 && request.prove {
             return ResponseQuery(
@@ -535,7 +535,7 @@ extension BaseApp: ABCIApplication {
             height = request.height
         }
         
-        let request = RequestQuery<Data>(data: request.data, path: request.path, height: height, prove: request.prove)
+        let request = RequestQuery<Data>(path: request.path, data: request.data, height: height, prove: request.prove)
         
         if request.height <= 1 && request.prove {
             return ResponseQuery(
