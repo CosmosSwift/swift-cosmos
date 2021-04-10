@@ -94,10 +94,13 @@ public struct GetAccount: ParsableCommand {
     public mutating func run() throws {
         // TODO: map url to the proper value
         let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
+        defer {
+            try? httpClient.syncShutdown()
+        }
         let client = RESTClient(url: queryFlags.node.description, httpClient: httpClient)
         
         #warning("These shouldn't be hardcoded?")
-        let height: Int64 = 4
+        let height: Height = Height(0)
         let prove = false
         
         let params: RequestQuery = .init(path: "custom/acc/account", data: GetAccountPayload(Address: self.address), height: height, prove: prove)
@@ -225,9 +228,12 @@ public struct QueryTransaction: ParsableCommand {
     
     public mutating func run() throws {
         let httpClient = HTTPClient(eventLoopGroupProvider: .createNew)
+        defer {
+            try? httpClient.syncShutdown()
+        }
         let client = RESTClient(url: queryFlags.node.description, httpClient: httpClient)
         
-        let output = try client.transaction(params: .init(hash: txHash.data, prove: true))
+        let output = try client.transaction(params: .init(hash: txHash.toData() ?? Data(), prove: true))
             .flatMapResult { wrappedTxResponse in
                 wrappedTxResponse.result
             }.flatMap { txResponse -> EventLoopFuture<Cosmos.TransactionResponse> in

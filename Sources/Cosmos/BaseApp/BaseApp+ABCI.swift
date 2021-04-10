@@ -443,8 +443,8 @@ extension BaseApp: ABCIApplication {
 
         let path = "/" + path.suffix(from: 1).joined(separator: "/")
         
-        let height: Int64
-        if request.height == 0, let lastBlockHeight = lastBlockHeight {
+        let height: Height
+        if request.height == Height(0), let lastBlockHeight = lastBlockHeight {
             height = lastBlockHeight
         } else {
             height = request.height
@@ -452,7 +452,7 @@ extension BaseApp: ABCIApplication {
         
         let request = RequestQuery<Data>(path: path, data: request.data, height: height, prove: request.prove)
         
-        if request.height <= 1 && request.prove {
+        if Int64(request.height) <= 1 && request.prove {
             return ResponseQuery(
                 error: CosmosError.wrap(
                     error: CosmosError.invalidRequest,
@@ -528,8 +528,8 @@ extension BaseApp: ABCIApplication {
             )
         }
         
-        let height: Int64
-        if request.height == 0, let lastBlockHeight = lastBlockHeight {
+        let height: Height
+        if request.height == Height(0), let lastBlockHeight = lastBlockHeight {
             height = lastBlockHeight
         } else {
             height = request.height
@@ -537,7 +537,7 @@ extension BaseApp: ABCIApplication {
         
         let request = RequestQuery<Data>(path: request.path, data: request.data, height: height, prove: request.prove)
         
-        if request.height <= 1 && request.prove {
+        if Int64(request.height) <= 1 && request.prove {
             return ResponseQuery(
                 error: CosmosError.wrap(
                     error: CosmosError.invalidRequest,
@@ -549,12 +549,12 @@ extension BaseApp: ABCIApplication {
         let cacheMultiStore: MultiStore
             
         do {
-            cacheMultiStore = try commitMultiStore.cacheMultiStore(withVersion: request.height)
+            cacheMultiStore = try commitMultiStore.cacheMultiStore(withVersion: Int64(request.height))
         } catch {
             return ResponseQuery(
                 error: CosmosError.wrap(
                     error: CosmosError.invalidRequest,
-                    description: "failed to load state at height \(request.height); \(error) (latest height: \(lastBlockHeight ?? 0))"
+                    description: "failed to load state at height \(request.height); \(error) (latest height: \(lastBlockHeight ?? Height(0))"
                 )
             )
         }

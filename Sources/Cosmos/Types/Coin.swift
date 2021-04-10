@@ -321,11 +321,11 @@ extension Array where Element == Coin {
         var dict = lhs.reduce(into: [String:UInt](), { $0[$1.denomination] = $1.amount } )
         
         for coin in rhs {
-            let diff = dict[coin.denomination, default: 0] - coin.amount
-            if diff < 0 {
+            let value = dict[coin.denomination, default: 0]
+            if value < coin.amount {
                 throw CosmosError.errInvalidCoins
             } else {
-                dict[coin.denomination] = diff
+                dict[coin.denomination] = value - coin.amount
             }
         }
         
