@@ -1,5 +1,6 @@
 import Foundation
 import Tendermint
+import ABCIMessages
 
 // GasInfo defines tx execution gas context.
 struct GasInfo: Codable {
@@ -192,7 +193,7 @@ public struct TransactionResponse : Codable  {
         self.log = try values.decode(String.self, forKey: .rawLog)
         // TODO: properly decode
         
-        let height = try values.decodeIfPresent(Int64.self, forKey: .height)
+        let height = try values.decodeIfPresent(Height.self, forKey: .height)
         let codespace = try values.decodeIfPresent(String.self, forKey: .codespace)
         let data = try values.decodeIfPresent(Data.self, forKey: .data)
         let info = try values.decodeIfPresent(String.self, forKey: .info)
@@ -246,9 +247,9 @@ enum TransactionState {
     // just sent
     case broadcast
     // either checked or delivered
-    case processed(_ height: Int64, _ codeSpace: String, _ data: Data, _ info: String, _ gasWanted: Int64, _ gasUsed: Int64)
+    case processed(_ height: Height, _ codeSpace: String, _ data: Data, _ info: String, _ gasWanted: Int64, _ gasUsed: Int64)
     // NewResponseResultTx
-    case completed(_ height: Int64, _ codeSpace: String, _ data: Data, _ info: String, _ gasWanted: Int64, _ gasUsed: Int64, _ transaction: TransactionBytes, _ timestamp: Date)
+    case completed(_ height: Height, _ codeSpace: String, _ data: Data, _ info: String, _ gasWanted: Int64, _ gasUsed: Int64, _ transaction: TransactionBytes, _ timestamp: Date)
 }
 
 

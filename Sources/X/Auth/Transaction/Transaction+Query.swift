@@ -6,8 +6,9 @@
 //
 import NIO
 import Tendermint
+import ABCIMessages
 
-internal func getBlocksForTransactionResults(transactionResponses: [TransactionResponse], restClient: RESTClient) -> EventLoopFuture<[Int64: BlockResponse]> {
+internal func getBlocksForTransactionResults(transactionResponses: [Tendermint.TransactionResponse], restClient: RESTClient) -> EventLoopFuture<[Height: BlockResponse]> {
     
     
     // filter responses with same height parameter
@@ -24,7 +25,7 @@ internal func getBlocksForTransactionResults(transactionResponses: [TransactionR
     }
 }
 
-private func getBlockForHeight(height: Int64, restClient: RESTClient) -> EventLoopFuture<BlockResponse> {
+private func getBlockForHeight(height: Height, restClient: RESTClient) -> EventLoopFuture<BlockResponse> {
     restClient.block(params: .init(height: height)).flatMap { response in
         switch response.result {
         case let .success(value):
@@ -35,6 +36,6 @@ private func getBlockForHeight(height: Int64, restClient: RESTClient) -> EventLo
     }
 }
 
-internal func getBlockForTransactionResult(transactionResponse: TransactionResponse, restClient: RESTClient) -> EventLoopFuture<BlockResponse> {
+internal func getBlockForTransactionResult(transactionResponse: Tendermint.TransactionResponse, restClient: RESTClient) -> EventLoopFuture<BlockResponse> {
     getBlockForHeight(height: transactionResponse.height, restClient: restClient)
 }
