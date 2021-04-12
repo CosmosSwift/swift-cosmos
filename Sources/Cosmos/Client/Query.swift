@@ -77,17 +77,8 @@ extension CosmosClient {
     
     // QueryABCI performs a query to a Tendermint node with the provide RequestQuery.
     // It returns the ResultQuery obtained from the query.
-    func queryABCI(req: RequestQuery<Data>) -> Swift.Result<ResponseQuery<Data>, ErrorWrapper> {
+    func queryABCI(req: RequestQuery<Data>, height: Int64) -> Swift.Result<ResponseQuery<Data>, ErrorWrapper> {
         let client = RESTClient(url: self.url, httpClient: self.client)
-        
-        //    func (ctx Context) queryABCI(req abci.RequestQuery) (abci.ResponseQuery, error) {
-
-        //        opts := rpcclient.ABCIQueryOptions{
-        //            Height: ctx.Height,
-        //            Prove:  req.Prove,
-        //        }
-        #warning("height is grabbed from the context somehow")
-        let height: Int64 = -1
         
         do {
             return try client.abciQuery(parameters: .init(path: req.path, data: req.data, height: height, prove: req.prove)).map {
