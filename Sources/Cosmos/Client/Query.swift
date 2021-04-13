@@ -81,7 +81,7 @@ extension CosmosClient {
         let client = RESTClient(url: self.url, httpClient: self.client)
         
         do {
-            return try client.abciQuery(parameters: .init(path: req.path, data: req.data, height: height, prove: req.prove)).map {
+            return try client.abciQueryMapToData(parameters: .init(path: req.path, data: req.data, height: height, prove: req.prove)).map {
                 $0.result.map { $0.response }
             }.wait()
         } catch {
@@ -124,7 +124,7 @@ extension CosmosClient {
     func query(path: String, key: Data /*tmbytes.HexBytes*/) -> Swift.Result<(Data, Int64), ErrorWrapper> {
         let client = RESTClient(url: self.url, httpClient: self.client)
         do {
-            return try client.abciQuery(parameters: .init(path: path, data: key)).map {
+            return try client.abciQueryMapToData(parameters: .init(path: path, data: key)).map {
                 $0.result.map { response in
                     return (response.response.value, response.response.height)
                 }
