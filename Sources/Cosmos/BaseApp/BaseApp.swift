@@ -206,12 +206,8 @@ open class BaseApp: Sealable {
     }
     
     // LastBlockHeight returns the last committed block height.
-    var lastBlockHeight: Height? {
-        
-        if let h = commitMultiStore.lastCommitID?.version {
-            return Height(h)
-        }
-        return nil
+    var lastBlockHeight: Int64? {
+        commitMultiStore.lastCommitID?.version
     }
 
     
@@ -360,10 +356,10 @@ open class BaseApp: Sealable {
         }
 
         // TODO: Check this default value
-        let previousHeight = self.lastBlockHeight ?? Height(0)
+        let previousHeight = self.lastBlockHeight ?? 0
         
-        guard Int64(request.header.height) == Int64(previousHeight) + 1 else {
-            throw Cosmos.Error.generic(reason: "invalid height: \(request.header.height); expected: \(Int64(previousHeight) + 1)")
+        guard request.header.height == previousHeight + 1 else {
+            throw Cosmos.Error.generic(reason: "invalid height: \(request.header.height); expected: \(previousHeight + 1)")
         }
     }
     
