@@ -100,7 +100,7 @@ public struct GetAccount: ParsableCommand {
         let client = RESTClient(url: queryFlags.node.description, httpClient: httpClient)
         
         #warning("These shouldn't be hardcoded?")
-        let height: Height = Height(0)
+        let height: Int64 = 0
         let prove = false
         
         let params: RequestQuery = .init(path: "custom/acc/account", data: GetAccountPayload(Address: self.address), height: height, prove: prove)
