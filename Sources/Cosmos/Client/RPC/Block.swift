@@ -56,12 +56,6 @@ import AsyncHTTPClient
     }
 }*/
 
-extension Height: ExpressibleByArgument {
-    public init?(argument: String) {
-        self.init(string: argument)
-    }
-}
-
 public struct BlockCommand: ParsableCommand {
     public static let configuration = CommandConfiguration(
         commandName: "block",
@@ -71,7 +65,7 @@ public struct BlockCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "<host>:<port> Node to connect to")
     public var node: Flags.NodeURL = .init()!
         
-    @Argument var height: Height
+    @Argument var height: Int64
     
     public init() { }
     
