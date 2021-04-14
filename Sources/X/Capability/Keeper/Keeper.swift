@@ -29,14 +29,22 @@ import Cosmos
 //
 // The keeper allows the ability to create scoped sub-keepers which are tied to
 // a single specific module.
-public struct CapabilityKeeper {
+public final class CapabilityKeeper {
+    let codec: Codec
+    let storeKey: StoreKey
+    let inMemoryStoreKey: StoreKey
+    var capabilities: [UInt64: Capability] = [:]
     // TODO: Implement
-//    cdc           codec.BinaryMarshaler
-//    storeKey      sdk.StoreKey
-//    memKey        sdk.StoreKey
-//    capMap        map[uint64]*types.Capability
 //    scopedModules map[string]struct{}
-//    sealed        bool
+    var sealed: Bool = false
+    
+    // NewKeeper constructs a new CapabilityKeeper instance and initializes maps
+    // for capability map and scopedModules map.
+    init(codec: Codec, storeKey: StoreKey, inMemoryStoreKey: StoreKey) {
+        self.codec = codec
+        self.storeKey = storeKey
+        self.inMemoryStoreKey = inMemoryStoreKey
+    }
 }
 
 // ScopedKeeper defines a scoped sub-keeper which is tied to a single specific
@@ -53,19 +61,7 @@ public struct ScopedCapabilityKeeper {
     let module: String
 }
 
-//// NewKeeper constructs a new CapabilityKeeper instance and initializes maps
-//// for capability map and scopedModules map.
-//func NewKeeper(cdc codec.BinaryMarshaler, storeKey, memKey sdk.StoreKey) *Keeper {
-//    return &Keeper{
-//        cdc:           cdc,
-//        storeKey:      storeKey,
-//        memKey:        memKey,
-//        capMap:        make(map[uint64]*types.Capability),
-//        scopedModules: make(map[string]struct{}),
-//        sealed:        false,
-//    }
-//}
-//
+extension CapabilityKeeper {
 //// ScopeToModule attempts to create and return a ScopedKeeper for a given module
 //// by name. It will panic if the keeper is already sealed or if the module name
 //// already has a ScopedKeeper.
@@ -125,79 +121,101 @@ public struct ScopedCapabilityKeeper {
 //
 //    k.sealed = true
 //}
-//
-//// InitializeIndex sets the index to one (or greater) in InitChain according
-//// to the GenesisState. It must only be called once.
-//// It will panic if the provided index is 0, or if the index is already set.
-//func (k Keeper) InitializeIndex(ctx sdk.Context, index uint64) error {
-//    if index == 0 {
-//        panic("SetIndex requires index > 0")
-//    }
-//    latest := k.GetLatestIndex(ctx)
-//    if latest > 0 {
-//        panic("SetIndex requires index to not be set")
-//    }
-//
-//    // set the global index to the passed index
-//    store := ctx.KVStore(k.storeKey)
-//    store.Set(types.KeyIndex, types.IndexToKey(index))
-//    return nil
-//}
-//
-//// GetLatestIndex returns the latest index of the CapabilityKeeper
-//func (k Keeper) GetLatestIndex(ctx sdk.Context) uint64 {
-//    store := ctx.KVStore(k.storeKey)
-//    return types.IndexFromKey(store.Get(types.KeyIndex))
-//}
-//
-//// SetOwners set the capability owners to the store
-//func (k Keeper) SetOwners(ctx sdk.Context, index uint64, owners types.CapabilityOwners) {
-//    prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixIndexCapability)
-//    indexKey := types.IndexToKey(index)
-//
-//    // set owners in persistent store
-//    prefixStore.Set(indexKey, k.cdc.MustMarshalBinaryBare(&owners))
-//}
-//
-//// GetOwners returns the capability owners with a given index.
-//func (k Keeper) GetOwners(ctx sdk.Context, index uint64) (types.CapabilityOwners, bool) {
-//    prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixIndexCapability)
-//    indexKey := types.IndexToKey(index)
-//
-//    // get owners for index from persistent store
-//    ownerBytes := prefixStore.Get(indexKey)
-//    if ownerBytes == nil {
-//        return types.CapabilityOwners{}, false
-//    }
-//    var owners types.CapabilityOwners
-//    k.cdc.MustUnmarshalBinaryBare(ownerBytes, &owners)
-//    return owners, true
-//}
-//
-//// InitializeCapability takes in an index and an owners array. It creates the capability in memory
-//// and sets the fwd and reverse keys for each owner in the memstore.
-//// It is used during initialization from genesis.
-//func (k Keeper) InitializeCapability(ctx sdk.Context, index uint64, owners types.CapabilityOwners) {
-//
-//    memStore := ctx.KVStore(k.memKey)
-//
-//    cap := types.NewCapability(index)
-//    for _, owner := range owners.Owners {
-//        // Set the forward mapping between the module and capability tuple and the
-//        // capability name in the memKVStore
-//        memStore.Set(types.FwdCapabilityKey(owner.Module, cap), []byte(owner.Name))
-//
-//        // Set the reverse mapping between the module and capability name and the
-//        // index in the in-memory store. Since marshalling and unmarshalling into a store
-//        // will change memory address of capability, we simply store index as value here
-//        // and retrieve the in-memory pointer to the capability from our map
-//        memStore.Set(types.RevCapabilityKey(owner.Module, owner.Name), sdk.Uint64ToBigEndian(index))
-//
-//        // Set the mapping from index from index to in-memory capability in the go map
-//        k.capMap[index] = cap
-//    }
-//
-//}
+
+    // InitializeIndex sets the index to one (or greater) in InitChain according
+    // to the GenesisState. It must only be called once.
+    // It will panic if the provided index is 0, or if the index is already set.
+    func initializeIndex(request: Request, index: UInt64) throws {
+        guard index > 0 else {
+            fatalError("SetIndex requires index > 0")
+        }
+    
+        let latest = latestIndex(request: request)
+        
+        guard latest == 0 else {
+            fatalError("SetIndex requires index to not be set")
+        }
+
+        // set the global index to the passed index
+        let store = request.keyValueStore(key: storeKey)
+        store.set(key: CapabilityKeys.keyIndex, value: CapabilityKeys.indexToKey(index: index))
+    }
+
+    // GetLatestIndex returns the latest index of the CapabilityKeeper
+    func latestIndex(request: Request) -> UInt64 {
+        let store = request.keyValueStore(key: storeKey)
+        
+        guard let key = store.get(key: CapabilityKeys.keyIndex) else {
+            return 0
+        }
+        
+        return CapabilityKeys.indexFromKey(key: key)
+    }
+
+    // SetOwners set the capability owners to the store
+    func setOwners(request: Request, index: UInt64, owners: CapabilityOwners) {
+        let prefixStore = PrefixStore(
+            parent: request.keyValueStore(key: storeKey),
+            prefix: CapabilityKeys.keyPrefixIndexCapability
+        )
+        
+        let indexKey = CapabilityKeys.indexToKey(index: index)
+
+        // set owners in persistent store
+        prefixStore.set(
+            key: indexKey,
+            value: codec.mustMarshalBinaryBare(value: owners)
+        )
+    }
+
+    // GetOwners returns the capability owners with a given index.
+    func owners(request: Request, index: UInt64) -> CapabilityOwners? {
+        let prefixStore = PrefixStore(
+            parent: request.keyValueStore(key: storeKey),
+            prefix: CapabilityKeys.keyPrefixIndexCapability
+        )
+        
+        let indexKey = CapabilityKeys.indexToKey(index: index)
+
+        // get owners for index from persistent store
+        guard let ownerData = prefixStore.get(key: indexKey) else {
+            return nil
+        }
+        
+        return codec.mustUnmarshalBinaryBare(data: ownerData)
+    }
+
+    // InitializeCapability takes in an index and an owners array. It creates the capability in memory
+    // and sets the fwd and reverse keys for each owner in the memstore.
+    // It is used during initialization from genesis.
+    func initializeCapability(request: Request, index: UInt64, owners: CapabilityOwners) {
+        let inMemoryStore = request.keyValueStore(key: inMemoryStoreKey)
+        let capability = Capability(index: index)
+        
+        for owner in owners.owners {
+            // Set the forward mapping between the module and capability tuple and the
+            // capability name in the memKVStore
+            inMemoryStore.set(
+                key: CapabilityKeys.forwardCapabilityKey(module: owner.module, capability: capability),
+                value: owner.name.data
+            )
+
+            // Set the reverse mapping between the module and capability name and the
+            // index in the in-memory store. Since marshalling and unmarshalling into a store
+            // will change memory address of capability, we simply store index as value here
+            // and retrieve the in-memory pointer to the capability from our map
+            inMemoryStore.set(
+                key: CapabilityKeys.reverseCapabilityKey(module: owner.module, name: owner.name),
+                // TODO: Check if .data takes endianess into account. Should encode big endian.
+                value: index.data
+            )
+
+            // Set the mapping from index from index to in-memory capability in the go map
+            capabilities[index] = capability
+        }
+
+    }
+}
 
 extension ScopedCapabilityKeeper {
 //// NewCapability attempts to create a new capability with a given name. If the
