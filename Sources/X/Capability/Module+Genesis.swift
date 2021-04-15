@@ -1,10 +1,3 @@
-//package capability
-//
-//import (
-//    sdk "github.com/cosmos/cosmos-sdk/types"
-//    "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-//    "github.com/cosmos/cosmos-sdk/x/capability/types"
-//)
 import Cosmos
 
 extension CapabilityKeeper {

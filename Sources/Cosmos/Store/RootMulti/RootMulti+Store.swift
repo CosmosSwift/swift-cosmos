@@ -536,6 +536,12 @@ final class RootMultiStore: CommitMultiStore {
             }
 
             return TransientStore()
+        case .inMemory:
+            guard key is InMemoryStoreKey else {
+                throw Cosmos.Error.generic(reason: "unexpected key type for a MemoryStoreKey; got: \(key)")
+            }
+
+            return InMemoryStore()
         }
     }
 

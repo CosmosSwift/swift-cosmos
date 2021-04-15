@@ -62,6 +62,7 @@ public enum StoreType {
     case database
     case iavlTree
     case transient
+    case inMemory
 }
 
 public protocol Store: CacheWrapper {
@@ -157,6 +158,13 @@ public final class KeyValueStoreKey: StoreKey {
 public final class TransientStoreKey: StoreKey {
     public override var description: String {
         "TransientStoreKey{\(ObjectIdentifier(self)), \(name)}"
+    }
+}
+
+// MemoryStoreKey defines a typed key to be used with an in-memory KVStore.
+public final class InMemoryStoreKey: StoreKey {
+    public override var description: String {
+        "MemoryStoreKey{\(ObjectIdentifier(self)), \(name)}"
     }
 }
 

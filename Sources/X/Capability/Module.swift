@@ -1,31 +1,3 @@
-//package capability
-//
-//import (
-//    "encoding/json"
-//    "fmt"
-//    "math/rand"
-//
-//    "github.com/gorilla/mux"
-//    "github.com/grpc-ecosystem/grpc-gateway/runtime"
-//    "github.com/spf13/cobra"
-//
-//    abci "github.com/tendermint/tendermint/abci/types"
-//
-//    "github.com/cosmos/cosmos-sdk/client"
-//    "github.com/cosmos/cosmos-sdk/codec"
-//    cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-//    sdk "github.com/cosmos/cosmos-sdk/types"
-//    "github.com/cosmos/cosmos-sdk/types/module"
-//    simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-//    "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-//    "github.com/cosmos/cosmos-sdk/x/capability/simulation"
-//    "github.com/cosmos/cosmos-sdk/x/capability/types"
-//)
-//
-//var (
-//    _ module.AppModuleSimulation = AppModule{}
-//)
-
 import ABCIMessages
 import JSON
 import Cosmos
@@ -50,6 +22,7 @@ class CapabilityAppModuleBasic: AppModuleBasic {
     // RegisterLegacyAminoCodec does nothing. Capability does not support amino.
     func register(codec: Codec) {}
 
+    #warning("TODO: Implement")
     // RegisterInterfaces registers the module's interface types
 //    func registerInterfaces(_ cdctypes.InterfaceRegistry) {}
     
@@ -149,6 +122,7 @@ final class CapabilityAppModule: CapabilityAppModuleBasic, AppModule {
     }
 }
 
+#warning("TODO: Implement")
 //// ConsensusVersion implements AppModule/ConsensusVersion.
 //func (AppModule) ConsensusVersion() uint64 { return 1 }
 //

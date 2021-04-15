@@ -1,7 +1,7 @@
 import Cosmos
 
 // x/capability module sentinel errors
-extension CosmosError {
+public enum CapabilityError {
     static let invalidCapabilityName    = CosmosError.register(codespace: CapabilityKeys.moduleName, code: 2, description: "capability name not valid")
     static let nilCapability            = CosmosError.register(codespace: CapabilityKeys.moduleName, code: 3, description: "provided capability is nil")
     static let capabilityTaken          = CosmosError.register(codespace: CapabilityKeys.moduleName, code: 4, description: "capability name already taken")

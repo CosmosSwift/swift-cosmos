@@ -30,7 +30,7 @@ extension CapabilityOwners {
         guard !exists(owner: owner) else {
             // owner already exists
             throw CosmosError.wrap(
-                error: CosmosError.ownerClaimed,
+                error: CapabilityError.ownerClaimed,
                 description: owner.description
             )
         }

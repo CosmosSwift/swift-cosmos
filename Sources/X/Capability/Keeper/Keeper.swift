@@ -1,18 +1,3 @@
-//package keeper
-//
-//import (
-//    "fmt"
-//    "strings"
-//
-//    "github.com/tendermint/tendermint/libs/log"
-//
-//    "github.com/cosmos/cosmos-sdk/codec"
-//    "github.com/cosmos/cosmos-sdk/store/prefix"
-//    sdk "github.com/cosmos/cosmos-sdk/types"
-//    sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-//    "github.com/cosmos/cosmos-sdk/x/capability/types"
-//)
-
 import Foundation
 import Logging
 import Cosmos
@@ -34,8 +19,7 @@ public final class CapabilityKeeper {
     let storeKey: StoreKey
     let inMemoryStoreKey: StoreKey
     var capabilities: [UInt64: Capability] = [:]
-    // TODO: Implement
-//    scopedModules map[string]struct{}
+    var scopedModules: Set<String> = []
     var sealed: Bool = false
     
     // NewKeeper constructs a new CapabilityKeeper instance and initializes maps
@@ -53,74 +37,102 @@ public final class CapabilityKeeper {
 // to claim capabilities they receive and retrieve capabilities which they own
 // by name, in addition to creating new capabilities & authenticating capabilities
 // passed by other modules.
-public struct ScopedCapabilityKeeper {
+public final class ScopedCapabilityKeeper {
     let codec: Codec // TODO: Use codec.BinaryMarshaler
     let storeKey: StoreKey
     let inMemoryStoreKey: StoreKey
-    let capabilities: [UInt64: Capability]
+    var capabilities: [UInt64: Capability]
     let module: String
+    
+    init(
+        codec: Codec,
+        storeKey: StoreKey,
+        inMemoryStoreKey: StoreKey,
+        capabilities: [UInt64 : Capability],
+        module: String
+    ) {
+        self.codec = codec
+        self.storeKey = storeKey
+        self.inMemoryStoreKey = inMemoryStoreKey
+        self.capabilities = capabilities
+        self.module = module
+    }
 }
 
 extension CapabilityKeeper {
-//// ScopeToModule attempts to create and return a ScopedKeeper for a given module
-//// by name. It will panic if the keeper is already sealed or if the module name
-//// already has a ScopedKeeper.
-//func (k *Keeper) ScopeToModule(moduleName string) ScopedKeeper {
-//    if k.sealed {
-//        panic("cannot scope to module via a sealed capability keeper")
-//    }
-//    if strings.TrimSpace(moduleName) == "" {
-//        panic("cannot scope to an empty module name")
-//    }
-//
-//    if _, ok := k.scopedModules[moduleName]; ok {
-//        panic(fmt.Sprintf("cannot create multiple scoped keepers for the same module name: %s", moduleName))
-//    }
-//
-//    k.scopedModules[moduleName] = struct{}{}
-//
-//    return ScopedKeeper{
-//        cdc:      k.cdc,
-//        storeKey: k.storeKey,
-//        memKey:   k.memKey,
-//        capMap:   k.capMap,
-//        module:   moduleName,
-//    }
-//}
-//
-//// InitializeAndSeal loads all capabilities from the persistent KVStore into the
-//// in-memory store and seals the keeper to prevent further modules from creating
-//// a scoped keeper. InitializeAndSeal must be called once after the application
-//// state is loaded.
-//func (k *Keeper) InitializeAndSeal(ctx sdk.Context) {
-//    if k.sealed {
-//        panic("cannot initialize and seal an already sealed capability keeper")
-//    }
-//
-//    memStore := ctx.KVStore(k.memKey)
-//    memStoreType := memStore.GetStoreType()
-//
-//    if memStoreType != sdk.StoreTypeMemory {
-//        panic(fmt.Sprintf("invalid memory store type; got %s, expected: %s", memStoreType, sdk.StoreTypeMemory))
-//    }
-//
-//    prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixIndexCapability)
-//    iterator := sdk.KVStorePrefixIterator(prefixStore, nil)
-//
-//    // initialize the in-memory store for all persisted capabilities
-//    defer iterator.Close()
-//
-//    for ; iterator.Valid(); iterator.Next() {
-//        index := types.IndexFromKey(iterator.Key())
-//
-//        var capOwners types.CapabilityOwners
-//
-//        k.cdc.MustUnmarshalBinaryBare(iterator.Value(), &capOwners)
-//        k.InitializeCapability(ctx, index, capOwners)
-//    }
-//
-//    k.sealed = true
-//}
+    // ScopeToModule attempts to create and return a ScopedKeeper for a given module
+    // by name. It will panic if the keeper is already sealed or if the module name
+    // already has a ScopedKeeper.
+    public func scope(to moduleName: String) -> ScopedCapabilityKeeper {
+        guard !sealed else {
+            fatalError("cannot scope to module via a sealed capability keeper")
+        }
+        
+        guard !moduleName.trimmingCharacters(in: .whitespaces).isEmpty else {
+            fatalError("cannot scope to an empty module name")
+        }
+
+        guard !scopedModules.contains(moduleName) else {
+            fatalError("cannot create multiple scoped keepers for the same module name: \(moduleName)")
+        }
+
+        scopedModules.insert(moduleName)
+
+        return ScopedCapabilityKeeper(
+            codec: codec,
+            storeKey: storeKey,
+            inMemoryStoreKey: inMemoryStoreKey,
+            capabilities: capabilities,
+            module: moduleName
+        )
+    }
+
+    // InitializeAndSeal loads all capabilities from the persistent KVStore into the
+    // in-memory store and seals the keeper to prevent further modules from creating
+    // a scoped keeper. InitializeAndSeal must be called once after the application
+    // state is loaded.
+    func initializeAndSeal(request: Request) {
+        guard !sealed else {
+            fatalError("cannot initialize and seal an already sealed capability keeper")
+        }
+
+        let inMemoryStore = request.keyValueStore(key: inMemoryStoreKey)
+        let inMemoryStoreType = inMemoryStore.storeType
+
+        guard inMemoryStoreType == .inMemory else {
+            fatalError("invalid memory store type; got \(inMemoryStoreType), expected: \(StoreType.inMemory)")
+        }
+
+        let prefixStore = PrefixStore(
+            parent: request.keyValueStore(key: storeKey),
+            prefix: CapabilityKeys.keyPrefixIndexCapability
+        )
+        
+        #warning("I'm unsure about this empty data prefix")
+        var iterator = prefixStore.prefixIterator(prefix: Data())
+
+        // initialize the in-memory store for all persisted capabilities
+        defer {
+            iterator.close()
+        }
+        
+        while iterator.isValid {
+            defer {
+                iterator.next()
+            }
+            
+            let index = CapabilityKeys.indexFromKey(key: iterator.key)
+            let capabilityOwners: CapabilityOwners = codec.mustUnmarshalBinaryBare(data: iterator.value)
+            
+            initializeCapability(
+                request: request,
+                index: index,
+                owners: capabilityOwners
+            )
+        }
+
+        sealed = true
+    }
 
     // InitializeIndex sets the index to one (or greater) in InitChain according
     // to the GenesisState. It must only be called once.
@@ -218,56 +230,84 @@ extension CapabilityKeeper {
 }
 
 extension ScopedCapabilityKeeper {
-//// NewCapability attempts to create a new capability with a given name. If the
-//// capability already exists in the in-memory store, an error will be returned.
-//// Otherwise, a new capability is created with the current global unique index.
-//// The newly created capability has the scoped module name and capability name
-//// tuple set as the initial owner. Finally, the global index is incremented along
-//// with forward and reverse indexes set in the in-memory store.
-////
-//// Note, namespacing is completely local, which is safe since records are prefixed
-//// with the module name and no two ScopedKeeper can have the same module name.
-//func (sk ScopedKeeper) NewCapability(ctx sdk.Context, name string) (*types.Capability, error) {
-//    if strings.TrimSpace(name) == "" {
-//        return nil, sdkerrors.Wrap(types.ErrInvalidCapabilityName, "capability name cannot be empty")
-//    }
-//    store := ctx.KVStore(sk.storeKey)
-//
-//    if _, ok := sk.GetCapability(ctx, name); ok {
-//        return nil, sdkerrors.Wrapf(types.ErrCapabilityTaken, fmt.Sprintf("module: %s, name: %s", sk.module, name))
-//    }
-//
-//    // create new capability with the current global index
-//    index := types.IndexFromKey(store.Get(types.KeyIndex))
-//    cap := types.NewCapability(index)
-//
-//    // update capability owner set
-//    if err := sk.addOwner(ctx, cap, name); err != nil {
-//        return nil, err
-//    }
-//
-//    // increment global index
-//    store.Set(types.KeyIndex, types.IndexToKey(index+1))
-//
-//    memStore := ctx.KVStore(sk.memKey)
-//
-//    // Set the forward mapping between the module and capability tuple and the
-//    // capability name in the memKVStore
-//    memStore.Set(types.FwdCapabilityKey(sk.module, cap), []byte(name))
-//
-//    // Set the reverse mapping between the module and capability name and the
-//    // index in the in-memory store. Since marshalling and unmarshalling into a store
-//    // will change memory address of capability, we simply store index as value here
-//    // and retrieve the in-memory pointer to the capability from our map
-//    memStore.Set(types.RevCapabilityKey(sk.module, name), sdk.Uint64ToBigEndian(index))
-//
-//    // Set the mapping from index from index to in-memory capability in the go map
-//    sk.capMap[index] = cap
-//
-//    logger(ctx).Info("created new capability", "module", sk.module, "name", name)
-//
-//    return cap, nil
-//}
+    // NewCapability attempts to create a new capability with a given name. If the
+    // capability already exists in the in-memory store, an error will be returned.
+    // Otherwise, a new capability is created with the current global unique index.
+    // The newly created capability has the scoped module name and capability name
+    // tuple set as the initial owner. Finally, the global index is incremented along
+    // with forward and reverse indexes set in the in-memory store.
+    //
+    // Note, namespacing is completely local, which is safe since records are prefixed
+    // with the module name and no two ScopedKeeper can have the same module name.
+    func makeCapability(request: Request, name: String) throws -> Capability {
+        guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
+            throw CosmosError.wrap(
+                error: CapabilityError.invalidCapabilityName,
+                description: "capability name cannot be empty"
+            )
+        }
+        
+        let store = request.keyValueStore(key: storeKey)
+
+        guard capability(name: name, request: request) == nil else {
+            throw CosmosError.wrap(
+                error: CapabilityError.capabilityTaken,
+                description: "module: \(module), name: \(name)"
+            )
+        }
+
+        // create new capability with the current global index
+        guard let key = store.get(key: CapabilityKeys.keyIndex) else {
+            #warning("It's not clear from the go code what should we do here. Throw or fatalError?")
+            fatalError()
+        }
+        
+        let index = CapabilityKeys.indexFromKey(key: key)
+        let capability = Capability(index: index)
+
+        // update capability owner set
+        try addOwner(
+            capability: capability,
+            name: name,
+            request: request
+        )
+
+        // increment global index
+        store.set(
+            key: CapabilityKeys.keyIndex,
+            value: CapabilityKeys.indexToKey(index: index + 1)
+        )
+
+        let inMemoryStore = request.keyValueStore(key: inMemoryStoreKey)
+
+        // Set the forward mapping between the module and capability tuple and the
+        // capability name in the memKVStore
+        inMemoryStore.set(
+            key: CapabilityKeys.forwardCapabilityKey(module: module, capability: capability),
+            value: name.data
+        )
+
+        // Set the reverse mapping between the module and capability name and the
+        // index in the in-memory store. Since marshalling and unmarshalling into a store
+        // will change memory address of capability, we simply store index as value here
+        // and retrieve the in-memory pointer to the capability from our map
+        #warning("TODO: Make sure .data returns big endian")
+        inMemoryStore.set(
+            key: CapabilityKeys.reverseCapabilityKey(module: module, name: name),
+            value: index.data
+        )
+
+        // Set the mapping from index from index to in-memory capability in the go map
+        capabilities[index] = capability
+        
+        log(
+            level: .info,
+            message: "created new capability\nmodule: \(module)\nname: \(name)",
+            request: request
+        )
+        
+        return capability
+    }
 
     // AuthenticateCapability attempts to authenticate a given capability and name
     // from a caller. It allows for a caller to check that a capability does in fact
@@ -291,13 +331,14 @@ extension ScopedCapabilityKeeper {
     // index. If the owner already exists, it will return an error. Otherwise, it will
     // also set a forward and reverse index for the capability and capability name.
     public func claim(capability: Capability, name: String, request: Request) throws {
+        #warning("Capability can't ever be nil")
 //        if cap == nil {
 //            return sdkerrors.Wrap(types.ErrNilCapability, "cannot claim nil capability")
 //        }
 
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
             throw CosmosError.wrap(
-                error: CosmosError.invalidCapabilityName,
+                error: CapabilityError.invalidCapabilityName,
                 description: "capability name cannot be empty"
             )
         }
@@ -330,47 +371,60 @@ extension ScopedCapabilityKeeper {
         )
     }
 
-//// ReleaseCapability allows a scoped module to release a capability which it had
-//// previously claimed or created. After releasing the capability, if no more
-//// owners exist, the capability will be globally removed.
-//func (sk ScopedKeeper) ReleaseCapability(ctx sdk.Context, cap *types.Capability) error {
-//    if cap == nil {
-//        return sdkerrors.Wrap(types.ErrNilCapability, "cannot release nil capability")
-//    }
-//    name := sk.GetCapabilityName(ctx, cap)
-//    if len(name) == 0 {
-//        return sdkerrors.Wrap(types.ErrCapabilityNotOwned, sk.module)
-//    }
-//
-//    memStore := ctx.KVStore(sk.memKey)
-//
-//    // Delete the forward mapping between the module and capability tuple and the
-//    // capability name in the memKVStore
-//    memStore.Delete(types.FwdCapabilityKey(sk.module, cap))
-//
-//    // Delete the reverse mapping between the module and capability name and the
-//    // index in the in-memory store.
-//    memStore.Delete(types.RevCapabilityKey(sk.module, name))
-//
-//    // remove owner
-//    capOwners := sk.getOwners(ctx, cap)
-//    capOwners.Remove(types.NewOwner(sk.module, name))
-//
-//    prefixStore := prefix.NewStore(ctx.KVStore(sk.storeKey), types.KeyPrefixIndexCapability)
-//    indexKey := types.IndexToKey(cap.GetIndex())
-//
-//    if len(capOwners.Owners) == 0 {
-//        // remove capability owner set
-//        prefixStore.Delete(indexKey)
-//        // since no one owns capability, we can delete capability from map
-//        delete(sk.capMap, cap.GetIndex())
-//    } else {
-//        // update capability owner set
-//        prefixStore.Set(indexKey, sk.cdc.MustMarshalBinaryBare(capOwners))
-//    }
-//
-//    return nil
-//}
+    // ReleaseCapability allows a scoped module to release a capability which it had
+    // previously claimed or created. After releasing the capability, if no more
+    // owners exist, the capability will be globally removed.
+    func release(capability: Capability, request: Request) throws {
+        #warning("Capability can't ever be nil")
+//        if cap == nil {
+//            return sdkerrors.Wrap(types.ErrNilCapability, "cannot release nil capability")
+//        }
+        
+        guard let name = name(capability: capability, request: request) else {
+             throw CosmosError.wrap(
+                error: CapabilityError.capabilityNotOwned,
+                description: module
+             )
+        }
+
+        let inMemoryStore = request.keyValueStore(key: inMemoryStoreKey)
+
+        // Delete the forward mapping between the module and capability tuple and the
+        // capability name in the memKVStore
+        inMemoryStore.delete(
+            key: CapabilityKeys.forwardCapabilityKey(module: module, capability: capability)
+        )
+
+        // Delete the reverse mapping between the module and capability name and the
+        // index in the in-memory store.
+        inMemoryStore.delete(
+            key: CapabilityKeys.reverseCapabilityKey(module: module, name: name)
+        )
+
+        // remove owner
+        var capabilityOwners = owners(capability: capability, request: request)
+        capabilityOwners.remove(owner: Owner(module: module, name: name))
+
+        let prefixStore = PrefixStore(
+            parent: request.keyValueStore(key: storeKey),
+            prefix: CapabilityKeys.keyPrefixIndexCapability
+        )
+        
+        let indexKey = CapabilityKeys.indexToKey(index: capability.index)
+
+        if capabilityOwners.owners.isEmpty {
+            // remove capability owner set
+            prefixStore.delete(key: indexKey)
+            // since no one owns capability, we can delete capability from map
+            capabilities[capability.index] = nil
+        } else {
+            // update capability owner set
+            prefixStore.set(
+                key: indexKey,
+                value: codec.mustMarshalBinaryBare(value: capabilityOwners)
+            )
+        }
+    }
 
     // GetCapability allows a module to fetch a capability which it previously claimed
     // by name. The module is not allowed to retrieve capabilities which it does not
@@ -406,67 +460,71 @@ extension ScopedCapabilityKeeper {
 
     // GetCapabilityName allows a module to retrieve the name under which it stored a given
     // capability given the capability
-    func name(capability: Capability, request: Request) -> String {
+    func name(capability: Capability, request: Request) -> String? {
         let inMemoryStore = request.keyValueStore(key: inMemoryStoreKey)
+        
         return inMemoryStore.get(
             key: CapabilityKeys.forwardCapabilityKey(
                 module: module,
                 capability: capability
             )
-        )?.string ?? ""
+        )?.string
     }
 
-//// GetOwners all the Owners that own the capability associated with the name this ScopedKeeper uses
-//// to refer to the capability
-//func (sk ScopedKeeper) GetOwners(ctx sdk.Context, name string) (*types.CapabilityOwners, bool) {
-//    if strings.TrimSpace(name) == "" {
-//        return nil, false
-//    }
-//    cap, ok := sk.GetCapability(ctx, name)
-//    if !ok {
-//        return nil, false
-//    }
-//
-//    prefixStore := prefix.NewStore(ctx.KVStore(sk.storeKey), types.KeyPrefixIndexCapability)
-//    indexKey := types.IndexToKey(cap.GetIndex())
-//
-//    var capOwners types.CapabilityOwners
-//
-//    bz := prefixStore.Get(indexKey)
-//    if len(bz) == 0 {
-//        return nil, false
-//    }
-//
-//    sk.cdc.MustUnmarshalBinaryBare(bz, &capOwners)
-//
-//    return &capOwners, true
-//}
-//
-//// LookupModules returns all the module owners for a given capability
-//// as a string array and the capability itself.
-//// The method returns an error if either the capability or the owners cannot be
-//// retreived from the memstore.
-//func (sk ScopedKeeper) LookupModules(ctx sdk.Context, name string) ([]string, *types.Capability, error) {
-//    if strings.TrimSpace(name) == "" {
-//        return nil, nil, sdkerrors.Wrap(types.ErrInvalidCapabilityName, "cannot lookup modules with empty capability name")
-//    }
-//    cap, ok := sk.GetCapability(ctx, name)
-//    if !ok {
-//        return nil, nil, sdkerrors.Wrap(types.ErrCapabilityNotFound, name)
-//    }
-//
-//    capOwners, ok := sk.GetOwners(ctx, name)
-//    if !ok {
-//        return nil, nil, sdkerrors.Wrap(types.ErrCapabilityOwnersNotFound, name)
-//    }
-//
-//    mods := make([]string, len(capOwners.Owners))
-//    for i, co := range capOwners.Owners {
-//        mods[i] = co.Module
-//    }
-//
-//    return mods, cap, nil
-//}
+    // GetOwners all the Owners that own the capability associated with the name this ScopedKeeper uses
+    // to refer to the capability
+    func owners(name: String, request: Request) -> CapabilityOwners? {
+        guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return nil
+        }
+        
+        guard let capability = capability(name: name, request: request) else {
+            return nil
+        }
+
+        let prefixStore = PrefixStore(
+            parent: request.keyValueStore(key: storeKey),
+            prefix: CapabilityKeys.keyPrefixIndexCapability
+        )
+        
+        let indexKey = CapabilityKeys.indexToKey(index: capability.index)
+
+        guard let data = prefixStore.get(key: indexKey) else {
+            return nil
+        }
+
+        return codec.mustUnmarshalBinaryBare(data: data)
+    }
+
+    // LookupModules returns all the module owners for a given capability
+    // as a string array and the capability itself.
+    // The method returns an error if either the capability or the owners cannot be
+    // retreived from the memstore.
+    func lookupModules(name: String, request: Request) throws -> ([String], Capability) {
+        guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
+            throw CosmosError.wrap(
+                error: CapabilityError.invalidCapabilityName,
+                description: "cannot lookup modules with empty capability name"
+            )
+        }
+        
+        guard let capability = capability(name: name, request: request) else {
+            throw CosmosError.wrap(
+                error: CapabilityError.capabilityNotFound,
+                description: name
+            )
+        }
+
+        guard let capabilityOwners = owners(name: name, request: request) else {
+            throw CosmosError.wrap(
+                error: CapabilityError.capabilityOwnersNotFound,
+                description: name
+            )
+        }
+
+        let modules = capabilityOwners.owners.map(\.module)
+        return (modules, capability)
+    }
 
     private func addOwner(capability: Capability, name: String, request: Request) throws {
         let prefixStore = PrefixStore(
