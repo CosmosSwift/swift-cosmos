@@ -18,6 +18,11 @@ public struct CosmosClient {
         self.url = url
         self.client = httpClient
     }
+    
+    public init(url: String, eventLoopGroupProvider: HTTPClient.EventLoopGroupProvider) {
+        self.url = url
+        self.client = HTTPClient(eventLoopGroupProvider: eventLoopGroupProvider)
+    }
 }
 
 extension CosmosClient {
@@ -25,7 +30,7 @@ extension CosmosClient {
     // It returns the result and height of the query upon success or an error if
     // the query fails.
     public func query(path: String) -> Swift.Result<(Data, Int64), ErrorWrapper> {
-        query(path: path, key: Data())
+        query(path: path, key: nil)
     }
 //    func (ctx Context) Query(path string) ([]byte, int64, error) {
 //        return ctx.query(path, nil)
@@ -34,7 +39,7 @@ extension CosmosClient {
     // QueryWithData performs a query to a Tendermint node with the provided path
     // and a data payload. It returns the result and height of the query upon success
     // or an error if the query fails.
-    func queryWithData(path: String, data: Data) -> Swift.Result<(Data, Int64), ErrorWrapper> {
+    public func queryWithData(path: String, data: Data?) -> Swift.Result<(Data, Int64), ErrorWrapper> {
         query(path: path, key: data)
     }
 //    func (ctx Context) QueryWithData(path string, data []byte) ([]byte, int64, error) {
@@ -121,7 +126,7 @@ extension CosmosClient {
     // query performs a query to a Tendermint node with the provided store name
     // and path. It returns the result and height of the query upon success
     // or an error if the query fails.
-    func query(path: String, key: Data /*tmbytes.HexBytes*/) -> Swift.Result<(Data, Int64), ErrorWrapper> {
+    func query(path: String, key: Data? /*tmbytes.HexBytes*/) -> Swift.Result<(Data, Int64), ErrorWrapper> {
         let client = RESTClient(url: self.url, httpClient: self.client)
         do {
             return try client.abciQueryMapToData(parameters: .init(path: path, data: key)).map {
