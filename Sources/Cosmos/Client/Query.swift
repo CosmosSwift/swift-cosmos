@@ -29,8 +29,8 @@ extension CosmosClient {
     // Query performs a query to a Tendermint node with the provided path.
     // It returns the result and height of the query upon success or an error if
     // the query fails.
-    public func query(path: String) -> Swift.Result<(Data, Int64), ErrorWrapper> {
-        query(path: path, key: nil)
+    public func query<ResponsePayload: Codable>(path: String, height: Int64 = 0, prove: Bool = false) -> Swift.Result<(ResponsePayload, Int64), ErrorWrapper> {
+        query(path: path, data: nil, height: height, prove: prove)
     }
 //    func (ctx Context) Query(path string) ([]byte, int64, error) {
 //        return ctx.query(path, nil)
@@ -39,9 +39,15 @@ extension CosmosClient {
     // QueryWithData performs a query to a Tendermint node with the provided path
     // and a data payload. It returns the result and height of the query upon success
     // or an error if the query fails.
-    public func queryWithData(path: String, data: Data?) -> Swift.Result<(Data, Int64), ErrorWrapper> {
-        query(path: path, key: data)
+    public func queryWithData(path: String, data: Data?, height: Int64, prove: Bool) -> Swift.Result<(Data, Int64), ErrorWrapper> {
+        query(path: path, payload: data, height: height, prove: prove)
     }
+    
+    
+    public func queryWithPayload<Payload: Codable, ResponsePayload: Codable>(path: String, data: Payload?, height: Int64, prove: Bool) -> Swift.Result<(ResponsePayload, Int64), ErrorWrapper> {
+        query(path: path, payload: data, height: height, prove: prove)
+    }
+    
 //    func (ctx Context) QueryWithData(path string, data []byte) ([]byte, int64, error) {
 //        return ctx.query(path, data)
 //    }
@@ -49,15 +55,15 @@ extension CosmosClient {
     // QueryStore performs a query to a Tendermint node with the provided key and
     // store name. It returns the result and height of the query upon success
     // or an error if the query fails.
-    func queryStore(key: Data, storeName: String) -> Swift.Result<(Data, Int64), ErrorWrapper> {
-        queryStore(key: key, storeName: storeName, endPath: "key")
+    func queryStore(key: Data, storeName: String, height: Int64, prove: Bool) -> Swift.Result<(Data, Int64), ErrorWrapper> {
+        queryStore(key: key, storeName: storeName, endPath: "key", height: height, prove: prove)
     }
 //    func (ctx Context) QueryStore(key tmbytes.HexBytes, storeName string) ([]byte, int64, error) {
 //        return ctx.queryStore(key, storeName, "key")
 //    }
 
     // GetFromAddress returns the from address from the context's name.
-    func queryFromAddress() -> Never /*sdk.AccAddress*/ {
+    func queryFromAddress(height: Int64, prove: Bool) -> Never /*sdk.AccAddress*/ {
         fatalError()
     }
 //    func (ctx Context) GetFromAddress() sdk.AccAddress {
@@ -65,7 +71,7 @@ extension CosmosClient {
 //    }
 
     // GetFeeGranterAddress returns the fee granter address from the context
-    func getFreeGranterAddress() -> Never /*sdk.AccAddress*/ {
+    func getFreeGranterAddress(height: Int64, prove: Bool) -> Never /*sdk.AccAddress*/ {
         fatalError()
     }
 //    func (ctx Context) GetFeeGranterAddress() sdk.AccAddress {
@@ -73,7 +79,7 @@ extension CosmosClient {
 //    }
 
     // GetFromName returns the key name for the current context.
-    func getFromName() -> String {
+    func getFromName(height: Int64, prove: Bool) -> String {
         fatalError()
     }
 //    func (ctx Context) GetFromName() string {
@@ -82,11 +88,11 @@ extension CosmosClient {
     
     // QueryABCI performs a query to a Tendermint node with the provide RequestQuery.
     // It returns the ResultQuery obtained from the query.
-    func queryABCI(req: RequestQuery<Data>, height: Int64) -> Swift.Result<ResponseQuery<Data>, ErrorWrapper> {
+    func queryABCI(req: RequestQuery<Data>, height: Int64, prove: Bool) -> Swift.Result<ResponseQuery<Data>, ErrorWrapper> {
         let client = RESTClient(url: self.url, httpClient: self.client)
         
         do {
-            return try client.abciQueryMapToData(parameters: .init(path: req.path, data: req.data, height: height, prove: req.prove)).map {
+            return try client.abciQueryMapToData(parameters: .init(path: req.path, data: req.data, height: height, prove: prove)).map {
                 $0.result.map { $0.response }
             }.wait()
         } catch {
@@ -126,10 +132,10 @@ extension CosmosClient {
     // query performs a query to a Tendermint node with the provided store name
     // and path. It returns the result and height of the query upon success
     // or an error if the query fails.
-    func query(path: String, key: Data? /*tmbytes.HexBytes*/) -> Swift.Result<(Data, Int64), ErrorWrapper> {
+    func query<Payload: Codable, ResponsePayload: Codable>(path: String, payload: Payload /*tmbytes.HexBytes*/, height: Int64, prove: Bool) -> Swift.Result<(ResponsePayload, Int64), ErrorWrapper> {
         let client = RESTClient(url: self.url, httpClient: self.client)
         do {
-            return try client.abciQueryMapToData(parameters: .init(path: path, data: key)).map {
+            return try client.abciQueryMapToData(parameters: .init(path: path, data: payload)).map {
                 $0.result.map { response in
                     return (response.response.value, response.response.height)
                 }
@@ -139,11 +145,24 @@ extension CosmosClient {
         }
     }
 
+    func query<ResponsePayload: Codable>(path: String, data: Data?, height: Int64, prove: Bool) -> Swift.Result<(ResponsePayload, Int64), ErrorWrapper> {
+        let client = RESTClient(url: self.url, httpClient: self.client)
+        do {
+            return try client.abciQueryMapToData(parameters: .init(path: path, data: data)).map {
+                $0.result.map { response in
+                    return (response.response.value, response.response.height)
+                }
+            }.wait()
+        } catch {
+            return .failure(.init(error: error))
+        }
+    }
+    
     // queryStore performs a query to a Tendermint node with the provided a store
     // name and path. It returns the result and height of the query upon success
     // or an error if the query fails.
-    func queryStore(key: Data /*tmbytes.HexBytes*/, storeName: String, endPath: String) -> Swift.Result<(Data, Int64), ErrorWrapper> {
-        query(path: "/store/\(storeName)/\(endPath)", key: key)
+    func queryStore(key: Data /*tmbytes.HexBytes*/, storeName: String, endPath: String, height: Int64, prove: Bool) -> Swift.Result<(Data, Int64), ErrorWrapper> {
+        query(path: "/store/\(storeName)/\(endPath)", payload: key, height: height, prove: prove)
     }
 
     // isQueryStoreWithProof expects a format like /<queryType>/<storeName>/<subpath>
