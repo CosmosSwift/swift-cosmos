@@ -34,10 +34,10 @@ public class Codec {
         let data = try marshalBinaryBare(value: value)
         
         let size = Data(varintEncode(data.count))
-        print(value)
-        print(data.count)
-        print(size.hex)
-        print(data.hex)
+//        print(value)
+//        print(data.count)
+//        print(size.hex)
+//        print(data.hex)
         return size + data
     }
 
@@ -50,7 +50,7 @@ public class Codec {
     // so the caller must handle framing.
     public func marshalBinaryBare<T: Encodable>(value: T) throws -> Data {
         let encoded = try encoder.encode(value)
-        print(String(data: encoded, encoding: .utf8))
+//        print(String(data: encoded, encoding: .utf8))
         return encoded
 
 //        // Dereference value if pointer.
@@ -126,7 +126,7 @@ public class Codec {
     
     // UnmarshalBinaryBare will panic if ptr is a nil-pointer.
     public func unmarshalBinaryBare<T: Decodable>(data: Data) throws -> T {
-        print(T.self)
+        //print(T.self)
         return try decoder.decode(T.self, from: data)
     }
     
@@ -145,7 +145,8 @@ public class Codec {
     }
     
     public func mustUnmarshalBinaryLengthPrefixed<T: Decodable>(data: Data) -> T {
-        try! decoder.decode(T.self, from: data)
+        try! unmarshalBinaryLengthPrefixed(data: data)
+        //try! decoder.decode(T.self, from: data)
     }
 
     

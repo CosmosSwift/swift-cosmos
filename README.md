@@ -5,35 +5,17 @@
 
 Build blockchain applications in Swift on top of the Tendermint consensus using [SwiftNIO](https://github.com/apple/swift-nio) as the server core.
 
-This project shows the work in progress for the port of the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) to Swift. It is based on version [0.39.1](https://github.com/cosmos/cosmos-sdk/tree/v0.39.1) of the SDK.
-
-The primary focus is to get to parity with the Cosmos-SDK version 0.40. We are currently tracking version 0.33.9 because the Go nameservice still requires it.
+This project shows the work in progress for the port of the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) to Swift. It is originally based on version [0.39.1](https://github.com/cosmos/cosmos-sdk/tree/v0.39.1) of the SDK, but during the development, we also incorporated implementations from 0.40.x and later, as we relaxed the requirements for the earlier version required by the go implementation of the nameservice.
 
 ## Work in progress
-This is work in progress. What we currrently have is the following:
+The current state of the repo allows us to implement all nameservice commands. The focus of the implementation has so far been to clone features and not to diverge too much from the Go implementation until the Swift framework was a bit more mature. We will now allow some divergence to start using more "Swifty" paradigms in the code.
 
-| Module/App  |  completion  |  notes
-|:-----------|:---------:|:-------
-| Framework  | ✔️ |   Framework mimics the CosmosSDK framework, including the directory structure.
-| Store  | ✔️ |  Currently using in memory version of iAVLPlus.
-| Bech32 | ✔️    |
-| Auth   | ✔️    | Staking, Governance, Bank requirements in progress (see respective Modules)
-| Params |   ✔️|    
-| Nameservice  | 70%| Allows us to test modules.
-| GenUtils | 80%|
-| Supply  |  50%  |  
-| Governance  |  0% |   
-| Staking | 50%    |
-| Simulation  |  50%|    
-| Bank |   70% |   
-| IBC | 0% |
-
-We currently bundle the nameservice, all modules and the framework as one repository, however, we will redistribute this into decoupled libraries when we get closer to parity with the Cosmos-sdk.
+We have followed the split of the repo into a cosmos one and an ibc one (https://github.com/cosmosswift/swift-ibc). In addition to the base framework, this repo contains the core modules (still organized partly as the 0.39.1 structure, but slowly moving to the more recent organisation where some modules have been merged) except for ibc. 
 
 ## Requirements
 - Swift version: 5.4.x
 - SwiftNIO version: 2.0.x
-- Tendermint/ABCI version: 0.33.9 (tendermint 0.33.9)
+- Tendermint/ABCI version: 0.34.0 (tendermint 0.34.0)
 
 ## Installation
 

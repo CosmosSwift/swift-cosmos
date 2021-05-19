@@ -91,7 +91,7 @@ extension CacheMergeIterator {
         }
 
         // If cache is invalid, get the parent key.
-        guard !cache.isValid else {
+        guard cache.isValid else {
             return parent.key
         }
 
