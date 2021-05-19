@@ -1,5 +1,4 @@
 import Foundation
-import ABCIMessages
 import CosmosProto
 
 // Coin hold some amount of one currency.
@@ -7,8 +6,7 @@ import CosmosProto
 // CONTRACT: A coin will never hold a negative amount of any denomination.
 public struct Coin: Codable {
     public let denomination: String
-    @StringBackedInt
-    public var amount: UInt
+    public let amount: UInt
     
     public init(denomination: String, amount: UInt) {
         self.denomination = denomination

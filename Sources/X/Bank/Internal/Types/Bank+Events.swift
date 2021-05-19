@@ -7,8 +7,6 @@ extension EventType {
 
 extension AttributeKey {
     static let recipient = "recipient"
-    static let sender = "recipient"
-    static let amount = "recipient"
 }
 
 extension AttributeValue {

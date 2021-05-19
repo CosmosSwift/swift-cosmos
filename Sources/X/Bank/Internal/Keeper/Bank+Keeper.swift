@@ -184,37 +184,8 @@ public final class BaseKeeper: BaseSendKeeper, BankKeeper  {
     }
     
     public func sendCoins(request: Request, fromAddress: AccountAddress, toAddress: AccountAddress, amount: Coins) throws {
-        #warning("This operation should be atomic")
-        let attributeRecipient = Attribute(
-            key: AttributeKey.recipient,
-            value: "\(fromAddress)"
-        )
-        let attributeSender = Attribute(
-            key: AttributeKey.sender,
-            value: "\(toAddress)"
-        )
-        let attributeAmount = Attribute(
-            key: AttributeKey.amount,
-            value: "\(amount)"
-        )
-        let transferEvent = Event(
-            type: EventType.transfer, // types.EventTypeTransfer
-            attributes: [attributeRecipient, attributeSender, attributeAmount]
-        )
-
-        request.eventManager.emit(event: transferEvent)
-        
-        let messageEvent = Event(
-            type: EventType.message, // types.EventTypeTransfer
-            attributes: [attributeSender]
-        )
-
-        request.eventManager.emit(event: messageEvent)
-
-        
-        _ = try subtractCoins(request: request, address: fromAddress, amount: amount)
-        
-        _ = try addCoins(request: request, address: toAddress, amount: amount)
+        // TODO: Implement
+        fatalError()
         /*
          ctx.EventManager().EmitEvents(sdk.Events{
              // This event should have all info (to, from, amount) without looking at other events

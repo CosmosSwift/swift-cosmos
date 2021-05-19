@@ -68,11 +68,7 @@ extension MutableTree: MTree {
         self.versions.contains(version)
     }
     
-    // Get returns the index and value of the specified key if it exists, or nil and the next index
-    // otherwise. The returned value must not be modified, since it may point to data stored within
-    // IAVL.
     public func getVersioned(key: Data, version: Int64) throws -> (index: Int64, value: Data?) {
-        
         try self.get(key: key, at: version)
     }
     
@@ -83,11 +79,7 @@ extension MutableTree: MTree {
         return root
     }
     
-    // Get returns the index and value of the specified key if it exists, or nil and the next index
-    // otherwise. The returned value must not be modified, since it may point to data stored within
-    // IAVL.
     public func get(key: Data) -> (index: Int64, value: Data?) {
-        
         self.get(key: key)
     }
     

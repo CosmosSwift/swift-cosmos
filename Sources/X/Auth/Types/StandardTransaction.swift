@@ -148,7 +148,7 @@ extension Auth {
             // StdTx.Msg is an interface. The concrete types
             // are registered by MakeTxCodec
             do {
-//                print(transactionData.hex)
+                print(transactionData.hex)
                 let transaction: StandardTransaction = try codec.unmarshalBinaryLengthPrefixed(data: transactionData)
                 return transaction
             } catch {
@@ -163,9 +163,9 @@ extension Auth {
             do {
                 let encoded = try codec.marshalBinaryLengthPrefixed(value: transaction as! StandardTransaction)
                 let tx: StandardTransaction = try codec.unmarshalBinaryLengthPrefixed(data: encoded)
-//                print (tx)
-//                print(encoded.hex)
-//                print(encoded.count)
+                print (tx)
+                print(encoded.hex)
+                print(encoded.count)
                 return encoded
                 
             } catch {

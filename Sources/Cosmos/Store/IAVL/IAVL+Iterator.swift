@@ -69,35 +69,13 @@ public struct IAVLIterator<Storage: NodeStorageProtocol>: Iterator where Storage
         self.tree = tree
         self.domain = (start, end)
         self.key = start
-        
-//        guard let (_, v) = try? tree.get(key: start) else {
-//            self.isValid = false
-//            self.value = Data()
-//            return
-//        }
-//
-//        if let value = v {
-//            self.isValid = true
-//            self.value = value
-//        } else {
-//            self.isValid = false
-//            self.value = Data()
-//        }
-        
-        
-        if let (_, v) = try? tree.get(key: start), let value = v {
-            self.isValid = true
-            self.value = value
-        }
-        
-        guard let key = try? tree.next(key: start), let (_, v) = try? tree.get(key: key), let value = v else {
+        guard let (_, v) = try? tree.get(key: start) else {
             self.isValid = false
             self.value = Data()
             return
         }
-        
-        if key < end {
-            self.key = key
+
+        if let value = v {
             self.isValid = true
             self.value = value
         } else {
