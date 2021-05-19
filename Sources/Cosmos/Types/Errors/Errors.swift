@@ -25,6 +25,9 @@ extension CosmosError {
     // invalid data.
     public static let invalidRequest = Self.register(codespace: Self.rootCodespace, code: 18, description: "invalid request")
 
+    // ErrInvalidVersion defines a general error for an invalid version
+    public static let invalidVersion = Self.register(codespace: Self.rootCodespace, code: 27, description: "invalid version")
+
     // ErrPanic is only set when we recover from a panic, so we know to
     // redact potentially sensitive system info
     static let panic = register(codespace: Self.undefinedCodespace, code: 111222, description: "panic")
